@@ -91,10 +91,11 @@ Exit: core collection browsing survives loss of every official API.
 
 ### Phase 2 — deterministic history and discovery
 
-- [ ] Specify all V1/V2 market events and edge cases.
-- [ ] Build a replayable indexer and publish its database schema.
-- [ ] Generate signed, content-addressed snapshots.
-- [ ] Verify snapshot output against direct log queries and known Punks.
+- [x] Specify the six canonical V2 market events used by the current site.
+- [x] Build a resumable event-replay tool and publish its data schema.
+- [x] Generate block-labelled, independently checksummed history snapshots.
+- [x] Verify snapshot output against known onchain Punk histories.
+- [ ] Specify V1 history as a separately labelled historical collection.
 - [ ] Add reproducible owners, leaderboards and market statistics.
 
 Exit: a third party can reconstruct every displayed derived value.

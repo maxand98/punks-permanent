@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "data:attributes": "node scripts/build-attributes-snapshot.mjs",
+    "data:history": "node scripts/build-market-history.mjs",
     "preview": "vite preview",
     "check": "tsc --noEmit && node scripts/verify-data.mjs"
   },

@@ -247,9 +247,34 @@ button { cursor: pointer; }
 .market-actions { display: flex; gap: 8px; }
 .pending-note { color: #777; font-size: 12px; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; }
+.section-heading > div > span { color: #666; font: 11px/1.5 monospace; }
 .section-heading button { border: 1px solid var(--ink); padding: 9px; background: #fff; font: 700 11px monospace; }
 .history-pending { margin-top: 30px; padding: 28px; background: var(--soft); }
 .history-pending p { max-width: 620px; line-height: 1.55; }
+.history-filter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 25px 0 12px;
+  font: 700 11px monospace;
+}
+.history-table-wrap { overflow-x: auto; }
+.history table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.history th {
+  border-bottom: 1px solid var(--ink);
+  padding: 10px 8px;
+  text-align: left;
+  font: 700 10px monospace;
+  text-transform: uppercase;
+}
+.history td { border-bottom: 1px solid var(--line); padding: 12px 8px; white-space: nowrap; }
+.history td:last-child { text-align: right; }
+.history-amount { font-weight: 800; }
+.event-type { font-weight: 800; }
+.event-bought { color: #167440; }
+.event-offered { color: var(--red); }
+.event-bid { color: var(--purple); }
+.history-source { color: #666; font: 10px/1.5 monospace; }
 .data-provenance {
   display: flex;
   flex-wrap: wrap;

@@ -31,12 +31,15 @@ The current milestone implements:
 - native offers and bids from the market contract;
 - a deterministic attribute snapshot for all 10,000 Punks at one Ethereum
   block;
+- 343,107 decoded native-market events, sharded and independently checksummed;
+- complete offers, bids, sales and transfer history with a low/flash-bid toggle
+  and JSON download;
 - the interactive `/cryptopunks` canonical collection map; and
 - the first `/cryptopunks/details/:id` parity route.
 
 It uses several RPC fallbacks and lets a visitor supply their own endpoint.
-Event-history reconstruction, complete search/filter routes, wallet
-transactions and immutable release infrastructure remain in progress.
+Owner/ranking routes, market-aware collection filters, wallet transactions and
+immutable release infrastructure remain in progress.
 
 Read the [implementation plan](docs/PLAN.md).
 

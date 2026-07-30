@@ -47,3 +47,49 @@ process.stdout.write(
   `Verified 10,000 onchain attribute records at block ${catalog.source.blockNumber}\n`,
 );
 process.stdout.write(`Verified composite SHA-256 ${actualImageHash}\n`);
+
+const historyManifest = JSON.parse(
+  await readFile(
+    new URL("../public/data/history-manifest.json", import.meta.url),
+    "utf8",
+  ),
+);
+const historyEventSum = historyManifest.shards.reduce(
+  (total, shard) => total + shard.events,
+  0,
+);
+if (historyEventSum !== historyManifest.totals.decodedEvents) {
+  throw new Error(
+    `History manifest event mismatch: ${historyEventSum} vs ${historyManifest.totals.decodedEvents}`,
+  );
+}
+
+for (const shard of historyManifest.shards) {
+  const contents = await readFile(
+    new URL(`../public/data/history/${shard.file}`, import.meta.url),
+  );
+  const hash = createHash("sha256").update(contents).digest("hex");
+  if (hash !== shard.sha256) {
+    throw new Error(`History shard ${shard.file} hash mismatch.`);
+  }
+}
+
+const punk7508Shard = JSON.parse(
+  await readFile(
+    new URL("../public/data/history/75.json", import.meta.url),
+    "utf8",
+  ),
+);
+const punk7508Purchase = punk7508Shard.punks["7508"].find(
+  (event) =>
+    event.type === "bought" &&
+    event.block === 11_504_994 &&
+    event.valueWei === "3950000000000000000",
+);
+if (!punk7508Purchase) {
+  throw new Error("Punk #7508 golden purchase fixture is missing.");
+}
+
+process.stdout.write(
+  `Verified ${historyManifest.totals.decodedEvents.toLocaleString()} decoded market events through block ${historyManifest.source.snapshotBlock}\n`,
+);

@@ -77,9 +77,9 @@ exposes them. Routes still requiring live-browser confirmation are marked TBD.
 - [x] Previous/next Punk navigation.
 - [x] Link owner into the local account route.
 - [x] Visible contract provenance.
-- [ ] Reconstruct complete event history from Ethereum logs.
-- [ ] Show/hide low and flash bids.
-- [ ] Download history.
+- [x] Reconstruct complete event history from Ethereum logs.
+- [x] Show/hide low and flash bids.
+- [x] Download history.
 - [ ] Resolve ENS with forward/reverse verification.
 - [ ] Block-labelled current state.
 - [ ] Wallet-aware action visibility.
@@ -148,7 +148,7 @@ its automated tests.
 | Punk SVG and attributes | Direct contract call | Implemented |
 | Attribute snapshot | Deterministic calls at one block; generated JSON includes block and contract | Implemented |
 | Current owner/offer/bid | Direct contract call | Implemented |
-| Complete event history | Direct log reconstruction with content-addressed acceleration snapshot | Planned |
+| Complete event history | Direct log reconstruction with 100 independently checksummed acceleration shards | Implemented |
 | Owners and rankings | Deterministic state/event reconstruction | Planned |
 | ETH/USD historical values | Signed, versioned external price corpus; never required for ETH truth | Planned |
 | ENS names | Forward and reverse onchain verification | Planned |

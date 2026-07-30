@@ -12,6 +12,12 @@ import {
   svgDataUrl,
   type PunkRecord,
 } from "./ethereum";
+import { formatEther } from "viem";
+import {
+  loadPunkHistory,
+  type HistoryManifest,
+  type MarketEvent,
+} from "./history";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
@@ -202,6 +208,130 @@ function renderAttributes(
   `;
 }
 
+function historyLabel(type: MarketEvent["type"]) {
+  return (
+    {
+      transfer: "Transfer",
+      offered: "Offered",
+      bid: "Bid",
+      "bid-withdrawn": "Bid Withdrawn",
+      bought: "Sold",
+      "offer-withdrawn": "Offer Withdrawn",
+    } satisfies Record<MarketEvent["type"], string>
+  )[type];
+}
+
+function historyAddress(address?: string) {
+  if (
+    !address ||
+    address === "0x0000000000000000000000000000000000000000"
+  ) {
+    return "";
+  }
+  return `<a href="/cryptopunks/accountinfo?account=${address}" data-link>${shortAddress(address)}</a>`;
+}
+
+function isLowOrFlash(event: MarketEvent, allEvents: MarketEvent[]) {
+  if (event.type !== "bid" && event.type !== "bid-withdrawn") return false;
+  if (event.valueWei && BigInt(event.valueWei) < 1_000_000_000_000_000_000n) {
+    return true;
+  }
+  return allEvents.some(
+    (candidate) =>
+      candidate !== event &&
+      candidate.transactionHash === event.transactionHash &&
+      candidate.valueWei === event.valueWei &&
+      candidate.from === event.from &&
+      ((event.type === "bid" && candidate.type === "bid-withdrawn") ||
+        (event.type === "bid-withdrawn" && candidate.type === "bid")),
+  );
+}
+
+function historyRows(events: MarketEvent[], showLowFlash: boolean) {
+  return [...events]
+    .reverse()
+    .filter((event) => showLowFlash || !isLowOrFlash(event, events))
+    .map((event) => {
+      const date = new Intl.DateTimeFormat("en", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(event.timestamp * 1000));
+      const amount = event.valueWei
+        ? `${Number(formatEther(BigInt(event.valueWei))).toLocaleString("en", {
+            maximumFractionDigits: 6,
+          })} ETH`
+        : "";
+      return `
+        <tr>
+          <td><span class="event-type event-${event.type}">${historyLabel(event.type)}</span></td>
+          <td>${historyAddress(event.from)}</td>
+          <td>${historyAddress(event.to ?? event.onlyTo)}</td>
+          <td class="history-amount">${amount}</td>
+          <td><a href="https://etherscan.io/tx/${event.transactionHash}" title="Block ${event.block.toLocaleString()}">${date} ↗</a></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderHistory(
+  events: MarketEvent[],
+  manifest: HistoryManifest,
+) {
+  return `
+    <div class="section-heading">
+      <div>
+        <h2 id="history-title">Transaction History</h2>
+        <span>${events.length.toLocaleString()} decoded events through block ${manifest.source.snapshotBlock.toLocaleString()}</span>
+      </div>
+      <button type="button" id="download-history">Download History</button>
+    </div>
+    <label class="history-filter">
+      <input type="checkbox" id="show-low-flash">
+      Show Low/Flash Bids
+    </label>
+    <div class="history-table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>From</th><th>To</th><th>Amount</th><th>Txn</th></tr></thead>
+        <tbody id="history-rows">${historyRows(events, false)}</tbody>
+      </table>
+    </div>
+    <p class="history-source">Reconstructed from CryptoPunksMarket events. Snapshot SHA-256 values are published in the <a href="/data/history-manifest.json">release manifest</a>.</p>
+  `;
+}
+
+function bindHistory(id: number, events: MarketEvent[], manifest: HistoryManifest) {
+  const checkbox =
+    document.querySelector<HTMLInputElement>("#show-low-flash");
+  const rows = document.querySelector<HTMLTableSectionElement>("#history-rows");
+  const download =
+    document.querySelector<HTMLButtonElement>("#download-history");
+
+  checkbox?.addEventListener("change", () => {
+    if (rows) rows.innerHTML = historyRows(events, checkbox.checked);
+    bindNavigation();
+  });
+  download?.addEventListener("click", () => {
+    const payload = {
+      punk: id,
+      source: manifest.source,
+      events,
+    };
+    const url = URL.createObjectURL(
+      new Blob([`${JSON.stringify(payload, null, 2)}\n`], {
+        type: "application/json",
+      }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `cryptopunk-${id}-history-through-${manifest.source.snapshotBlock}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 async function renderPunkDetail(id: number) {
   if (!Number.isInteger(id) || id < 0 || id > 9999) {
     renderNotFound("That Punk number does not exist.");
@@ -230,14 +360,7 @@ async function renderPunkDetail(id: number) {
       <div class="detail-grid">
         <div id="market-status"><h2>Current Market Status</h2><p>Reading the canonical market contract…</p></div>
         <section class="history" aria-labelledby="history-title">
-          <div class="section-heading">
-            <h2 id="history-title">Transaction History</h2>
-            <button type="button" disabled>Download History</button>
-          </div>
-          <div class="history-pending">
-            <strong>Deterministic history reconstruction is next.</strong>
-            <p>Offers, bids, sales and transfers will be replayed from Ethereum event logs. No official history API will be required.</p>
-          </div>
+          <div class="history-pending"><strong>Loading deterministic Ethereum history…</strong></div>
         </section>
       </div>
       <aside class="data-provenance" id="data-provenance"></aside>
@@ -247,12 +370,17 @@ async function renderPunkDetail(id: number) {
   bindNavigation();
 
   try {
-    const [record, catalog] = await Promise.all([loadPunk(id), loadCatalog()]);
+    const [record, catalog, history] = await Promise.all([
+      loadPunk(id),
+      loadCatalog(),
+      loadPunkHistory(id),
+    ]);
     const image = document.querySelector<HTMLDivElement>("#punk-image");
     const attributes = document.querySelector<HTMLDivElement>("#punk-attributes");
     const market = document.querySelector<HTMLDivElement>("#market-status");
     const provenance =
       document.querySelector<HTMLElement>("#data-provenance");
+    const historyElement = document.querySelector<HTMLElement>(".history");
 
     if (image) {
       image.classList.remove("loading-image");
@@ -260,6 +388,13 @@ async function renderPunkDetail(id: number) {
     }
     if (attributes) attributes.innerHTML = renderAttributes(id, record, catalog);
     if (market) market.outerHTML = renderStatus(record);
+    if (historyElement) {
+      historyElement.innerHTML = renderHistory(
+        history.events,
+        history.manifest,
+      );
+      bindHistory(id, history.events, history.manifest);
+    }
     if (provenance) {
       provenance.innerHTML = `
         <strong>Verify this page</strong>
