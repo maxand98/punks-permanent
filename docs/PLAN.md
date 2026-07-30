@@ -18,14 +18,19 @@ The project is not “completely decentralised” until that test passes.
 
 - Project name: **Punks Permanent**
 - Repository: `github.com/maxand98/punks-permanent`
-- Proposed Ethereum-native name: `punks.maxand98.eth`
-- Native URL: `web3://punks.maxand98.eth`
-- Gateway URL: `https://punks.maxand98.eth.limo`
-- Convenience mirror: `https://permanent.maxand98.com`
+- Intended conventional domain: `cryptopunks.website`
+- Intended Ethereum-native name: `cryptopunkswebsite.eth`
+- Native URL: `web3://cryptopunkswebsite.eth`
+- Gateway URL: `https://cryptopunkswebsite.eth.limo`
 
 The ENS contenthash is the canonical mutable pointer. Every release CID remains
 independently addressable and listed in an append-only signed release ledger.
 The conventional domain is a convenience, never the root of trust.
+
+Both names were confirmed available on 30 July 2026 but remain unregistered.
+Because `cryptopunks.website` could be mistaken for an official property, every
+interface and metadata surface must state prominently that this is an
+independent, unofficial client.
 
 ## Architecture
 
@@ -110,7 +115,8 @@ Exit: the native market remains usable with no project-controlled backend.
 - [ ] Signed manifest, dependency lock, SBOM and restore instructions.
 - [ ] Publish to IPFS and Arweave; verify from independent gateways/nodes.
 - [ ] Establish independent pinning partners and a public responsibility map.
-- [ ] Configure `punks.maxand98.eth` contenthash and the convenience mirror.
+- [ ] Register `cryptopunks.website` and `cryptopunkswebsite.eth`.
+- [ ] Configure the ENS contenthash and conventional-domain mirror.
 
 Exit: a release survives loss of GitHub, DNS and the primary host.
 

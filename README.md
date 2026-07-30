@@ -7,6 +7,16 @@ on Ethereum, but the usual doorway is still a conventional web application.
 Punks Permanent is building a doorway that can survive its current maintainer,
 domain, host, API, indexer and preferred RPC.
 
+Intended public names, confirmed available on 30 July 2026 but not yet
+registered:
+
+- `cryptopunks.website`
+- `cryptopunkswebsite.eth`
+- `web3://cryptopunkswebsite.eth`
+
+This is an independent, unofficial client and is not the official CryptoPunks
+website.
+
 ## Status
 
 Alpha 0.1 is a contract-first proof of the essential read path. It retrieves:
