@@ -54,9 +54,10 @@ export function setCustomRpc(url: string) {
 }
 
 export function svgDataUrl(svg: string) {
-  return svg.startsWith("data:image/svg+xml")
-    ? svg
-    : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  const payload = svg.startsWith("data:image/svg+xml")
+    ? svg.slice(svg.indexOf(",") + 1)
+    : svg;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(payload)}`;
 }
 
 export async function loadPunk(id: number): Promise<PunkRecord> {

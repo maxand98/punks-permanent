@@ -19,15 +19,24 @@ website.
 
 ## Status
 
-Alpha 0.1 is a contract-first proof of the essential read path. It retrieves:
+The target is route-by-route visual and functional parity with the public
+CryptoPunks website, with its essential paths rebuilt so no official API, host
+or image server is indispensable. See the
+[parity specification](docs/PARITY.md).
+
+The current milestone implements:
 
 - SVG and attributes from `CryptoPunksData`;
 - ownership from the original `CryptoPunksMarket`; and
-- native offers and bids from the market contract.
+- native offers and bids from the market contract;
+- a deterministic attribute snapshot for all 10,000 Punks at one Ethereum
+  block;
+- the interactive `/cryptopunks` canonical collection map; and
+- the first `/cryptopunks/details/:id` parity route.
 
-It uses several RPC fallbacks and lets a visitor supply their own endpoint. It
-does not yet include full collection browsing, event history, transactions or
-immutable release infrastructure.
+It uses several RPC fallbacks and lets a visitor supply their own endpoint.
+Event-history reconstruction, complete search/filter routes, wallet
+transactions and immutable release infrastructure remain in progress.
 
 Read the [implementation plan](docs/PLAN.md).
 

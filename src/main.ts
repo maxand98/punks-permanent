@@ -1,81 +1,61 @@
 import "./style.css";
-import { getRpcList, loadPunk, setCustomRpc, svgDataUrl } from "./ethereum";
+import {
+  loadCatalog,
+  normalizePunkType,
+  typeDescription,
+  type CatalogSnapshot,
+} from "./catalog";
+import {
+  getRpcList,
+  loadPunk,
+  setCustomRpc,
+  svgDataUrl,
+  type PunkRecord,
+} from "./ethereum";
 
-const app = document.querySelector<HTMLDivElement>("#app");
-
+const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
 
-app.innerHTML = `
+const navigation = `
   <header class="site-header">
-    <a class="wordmark" href="/">Punks Permanent</a>
-    <div class="chain-status"><span></span> Ethereum mainnet</div>
-    <a href="https://github.com/maxand98/punks-permanent">Source ↗</a>
-  </header>
-  <main>
-    <section class="hero">
-      <p class="eyebrow">Independent CryptoPunks client · Alpha 0.1</p>
-      <h1>The Punks are permanent.<br><em>The doorway should be too.</em></h1>
-      <p class="lede">A public, reproducible interface that reads the artwork and native market directly from Ethereum. No official API is required.</p>
-      <form id="punk-form" class="punk-search">
-        <label for="punk-id">Open a Punk</label>
+    <a class="brand" href="/" data-link>CryptoPunks</a>
+    <nav aria-label="Primary navigation">
+      <a href="https://hub.cryptopunks.app/">Brand Hub</a>
+      <a href="/cryptopunks" data-link>All CryptoPunks</a>
+      <a href="/cryptopunks/owners" data-link>Owners</a>
+      <details>
+        <summary>Types and Attributes</summary>
         <div>
-          <span>#</span>
-          <input id="punk-id" name="punk" type="number" min="0" max="9999" value="7804" required>
-          <button type="submit">Read from chain</button>
+          <a href="/cryptopunks/types" data-link>Punk Types</a>
+          <a href="/cryptopunks/attributes" data-link>Attributes</a>
+          <a href="/cryptopunks/attribute-counts" data-link>Attribute Counts</a>
         </div>
-      </form>
-    </section>
-
-    <section class="viewer" aria-live="polite">
-      <div class="art-stage" id="art-stage">
-        <div class="loading-grid"></div>
-        <p>Calling CryptoPunksData…</p>
-      </div>
-      <article class="punk-record" id="punk-record">
-        <p class="eyebrow">Canonical contract record</p>
-        <h2>Punk #7804</h2>
-        <p class="loading-copy">Loading owner, traits and native market state from Ethereum.</p>
-      </article>
-    </section>
-
-    <section class="principles">
-      <p class="eyebrow">What this client refuses to depend on</p>
-      <div class="principle-grid">
-        <article><span>01</span><h3>No image server</h3><p>The SVG is returned by the onchain CryptoPunksData contract.</p></article>
-        <article><span>02</span><h3>No official API</h3><p>Ownership, bids and offers are read from the original market contract.</p></article>
-        <article><span>03</span><h3>No single RPC</h3><p>Fallback endpoints are built in, and you can supply your own Ethereum node.</p></article>
-        <article><span>04</span><h3>No hidden build</h3><p>Every release will be reproducible, checksummed and content-addressed.</p></article>
-      </div>
-    </section>
-
-    <section class="node-settings">
-      <div>
-        <p class="eyebrow">Your doorway, your node</p>
-        <h2>Replace our defaults.</h2>
-        <p>The essential read path should work through a local node or any standards-compatible Ethereum RPC.</p>
-      </div>
-      <form id="rpc-form">
-        <label for="rpc-url">Custom RPC URL</label>
-        <input id="rpc-url" type="url" placeholder="http://localhost:8545">
-        <button type="submit">Save endpoint</button>
-        <button type="button" id="clear-rpc">Use fallbacks</button>
-        <small id="rpc-summary"></small>
-      </form>
-    </section>
-  </main>
-  <footer>
-    <span>CC0 code · Built for independent operation</span>
-    <a href="https://maxand98.com/writing/the-punks-are-permanent/">Read the preservation proposal ↗</a>
-  </footer>
+      </details>
+      <details>
+        <summary>Sales</summary>
+        <div>
+          <a href="/cryptopunks/largest-sales" data-link>Largest Sales</a>
+          <a href="/cryptopunks/transactions" data-link>Recent Transactions</a>
+          <a href="/cryptopunks/bids" data-link>Bids</a>
+        </div>
+      </details>
+    </nav>
+    <button class="wallet-button" type="button" disabled title="Wallet actions are the next parity phase">Connect Wallet</button>
+  </header>
 `;
 
-const form = document.querySelector<HTMLFormElement>("#punk-form")!;
-const input = document.querySelector<HTMLInputElement>("#punk-id")!;
-const stage = document.querySelector<HTMLDivElement>("#art-stage")!;
-const record = document.querySelector<HTMLElement>("#punk-record")!;
-const rpcForm = document.querySelector<HTMLFormElement>("#rpc-form")!;
-const rpcInput = document.querySelector<HTMLInputElement>("#rpc-url")!;
-const rpcSummary = document.querySelector<HTMLElement>("#rpc-summary")!;
+const footer = `
+  <footer>
+    <div>
+      <strong>CryptoPunks</strong>
+      <p>An independent, unofficial interface reading the canonical Ethereum contracts.</p>
+    </div>
+    <div>
+      <a href="https://github.com/maxand98/punks-permanent">Source code ↗</a>
+      <a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal ↗</a>
+    </div>
+  </footer>
+`;
 
 function shortAddress(address: string) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
@@ -85,60 +65,531 @@ function etherscan(address: string) {
   return `https://etherscan.io/address/${address}`;
 }
 
-async function renderPunk(id: number) {
-  stage.classList.add("is-loading");
-  stage.innerHTML = `<div class="loading-grid"></div><p>Reading Punk #${id} from Ethereum…</p>`;
-  record.innerHTML = `<p class="eyebrow">Canonical contract record</p><h2>Punk #${id}</h2><p class="loading-copy">Querying multiple independent contract methods.</p>`;
+function punkRoute(id: number) {
+  return `/cryptopunks/details/${id}`;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] ?? character,
+  );
+}
+
+function searchForm(value = "") {
+  return `
+    <form class="global-search" data-punk-search>
+      <label for="punk-search">Find a Punk</label>
+      <div>
+        <span>#</span>
+        <input id="punk-search" name="punk" type="search" value="${escapeHtml(value)}" placeholder="Punk number, type or attribute" required>
+        <button type="submit">Search</button>
+      </div>
+    </form>
+  `;
+}
+
+function bindNavigation() {
+  document.querySelectorAll<HTMLAnchorElement>("[data-link]").forEach((link) => {
+    if (link.dataset.bound === "true") return;
+    link.dataset.bound = "true";
+    link.addEventListener("click", (event) => {
+      if (link.origin !== location.origin) return;
+      event.preventDefault();
+      history.pushState(null, "", link.pathname + link.search);
+      void renderRoute();
+    });
+  });
+
+  document
+    .querySelectorAll<HTMLFormElement>("[data-punk-search]")
+    .forEach((form) => {
+      if (form.dataset.bound === "true") return;
+      form.dataset.bound = "true";
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const input = form.querySelector<HTMLInputElement>('input[name="punk"]');
+        const query = input?.value.trim() ?? "";
+        const id = Number(query);
+        if (/^\d+$/.test(query) && Number.isInteger(id) && id >= 0 && id <= 9999) {
+          history.pushState(null, "", punkRoute(id));
+        } else if (query) {
+          history.pushState(
+            null,
+            "",
+            `/cryptopunks/search?query=${encodeURIComponent(query)}`,
+          );
+        } else {
+          return;
+        }
+        void renderRoute();
+      });
+    });
+}
+
+function renderStatus(record: PunkRecord) {
+  const publicOffer =
+    record.offer &&
+    record.offer.onlySellTo === "0x0000000000000000000000000000000000000000";
+  const offerText = record.offer
+    ? publicOffer
+      ? `${record.offer.priceEth} ETH`
+      : `${record.offer.priceEth} ETH to ${shortAddress(record.offer.onlySellTo)}`
+    : "Not For Sale";
+
+  return `
+    <section class="market-status" aria-labelledby="market-status-title">
+      <h2 id="market-status-title">Current Market Status</h2>
+      <dl>
+        <div>
+          <dt>Status</dt>
+          <dd class="${record.offer ? "status-for-sale" : ""}">${offerText}</dd>
+        </div>
+        <div>
+          <dt>Owner</dt>
+          <dd><a href="/cryptopunks/accountinfo?account=${record.owner}" data-link>${shortAddress(record.owner)}</a></dd>
+        </div>
+        <div>
+          <dt>Top Bid</dt>
+          <dd>${record.bid ? `${record.bid.priceEth} ETH by ${shortAddress(record.bid.bidder)}` : "No bids yet"}</dd>
+        </div>
+      </dl>
+      <div class="market-actions">
+        ${record.offer ? '<button type="button" disabled>Buy</button>' : ""}
+        <button type="button" disabled>Bid</button>
+      </div>
+      <p class="pending-note">Wallet transactions are disabled in this read-only parity milestone.</p>
+    </section>
+  `;
+}
+
+function renderAttributes(
+  id: number,
+  record: PunkRecord,
+  catalog: CatalogSnapshot,
+) {
+  const [rawType, ...traits] = catalog.punks[id] ?? record.attributes;
+  const type = normalizePunkType(rawType);
+  const typeCount = catalog.counts.types[type] ?? 0;
+  const traitNumberCount =
+    catalog.counts.attributeNumbers[String(traits.length)] ?? 0;
+
+  return `
+    <p class="punk-kind">${typeDescription(type, typeCount)}</p>
+    <section class="attributes" aria-labelledby="attributes-title">
+      <h2 id="attributes-title">Attributes</h2>
+      <p>This Punk has ${traits.length} attributes, one of ${traitNumberCount.toLocaleString()} with that many.</p>
+      <div class="attribute-list">
+        ${traits
+          .map(
+            (trait) => `
+              <a class="attribute-card" href="/cryptopunks/search?query=${encodeURIComponent(trait)}" data-link>
+                <strong>${trait}</strong>
+                <span>${(catalog.counts.attributes[trait] ?? 0).toLocaleString()} Punks have this.</span>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+async function renderPunkDetail(id: number) {
+  if (!Number.isInteger(id) || id < 0 || id > 9999) {
+    renderNotFound("That Punk number does not exist.");
+    return;
+  }
+
+  document.title = `CryptoPunk #${id} - CryptoPunks`;
+  app.innerHTML = `
+    ${navigation}
+    <main class="detail-page">
+      <div class="detail-tools">
+        ${searchForm(String(id))}
+        <nav class="punk-pagination" aria-label="Punk navigation">
+          ${id > 0 ? `<a href="${punkRoute(id - 1)}" data-link>← Punk #${id - 1}</a>` : "<span></span>"}
+          ${id < 9999 ? `<a href="${punkRoute(id + 1)}" data-link>Punk #${id + 1} →</a>` : "<span></span>"}
+        </nav>
+      </div>
+      <section class="punk-hero">
+        <div class="punk-image loading-image" id="punk-image"><span>Reading onchain image…</span></div>
+        <div class="punk-heading">
+          <p class="kicker">CryptoPunk</p>
+          <h1>${id}</h1>
+          <div id="punk-attributes"><p>Reading attributes at a fixed Ethereum block…</p></div>
+        </div>
+      </section>
+      <div class="detail-grid">
+        <div id="market-status"><h2>Current Market Status</h2><p>Reading the canonical market contract…</p></div>
+        <section class="history" aria-labelledby="history-title">
+          <div class="section-heading">
+            <h2 id="history-title">Transaction History</h2>
+            <button type="button" disabled>Download History</button>
+          </div>
+          <div class="history-pending">
+            <strong>Deterministic history reconstruction is next.</strong>
+            <p>Offers, bids, sales and transfers will be replayed from Ethereum event logs. No official history API will be required.</p>
+          </div>
+        </section>
+      </div>
+      <aside class="data-provenance" id="data-provenance"></aside>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
 
   try {
-    const punk = await loadPunk(id);
-    stage.classList.remove("is-loading");
-    stage.innerHTML = `<img src="${svgDataUrl(punk.svg)}" alt="CryptoPunk #${punk.id}, rendered from the CryptoPunksData contract"><span>Onchain SVG · 24 × 24 source pixels</span>`;
-    record.innerHTML = `
-      <p class="eyebrow">Canonical contract record</p>
-      <h2>Punk #${punk.id}</h2>
-      <dl>
-        <div><dt>Owner</dt><dd><a href="${etherscan(punk.owner)}">${shortAddress(punk.owner)} ↗</a></dd></div>
-        <div><dt>Offer</dt><dd>${punk.offer ? `${punk.offer.priceEth} ETH` : "Not offered"}</dd></div>
-        <div><dt>Highest open bid</dt><dd>${punk.bid ? `${punk.bid.priceEth} ETH` : "No open bid"}</dd></div>
-      </dl>
-      <div class="traits">${punk.attributes.map((trait) => `<span>${trait}</span>`).join("")}</div>
-      <p class="provenance">Artwork: CryptoPunksData <code>0x16F5…AF3B2</code><br>State: CryptoPunksMarket <code>0xb47e…3BBB</code></p>
-    `;
-    history.replaceState(null, "", `?punk=${punk.id}`);
+    const [record, catalog] = await Promise.all([loadPunk(id), loadCatalog()]);
+    const image = document.querySelector<HTMLDivElement>("#punk-image");
+    const attributes = document.querySelector<HTMLDivElement>("#punk-attributes");
+    const market = document.querySelector<HTMLDivElement>("#market-status");
+    const provenance =
+      document.querySelector<HTMLElement>("#data-provenance");
+
+    if (image) {
+      image.classList.remove("loading-image");
+      image.innerHTML = `<img src="${svgDataUrl(record.svg)}" alt="CryptoPunk #${id}, rendered from CryptoPunksData">`;
+    }
+    if (attributes) attributes.innerHTML = renderAttributes(id, record, catalog);
+    if (market) market.outerHTML = renderStatus(record);
+    if (provenance) {
+      provenance.innerHTML = `
+        <strong>Verify this page</strong>
+        <span>Attributes snapshot: Ethereum block ${Number(catalog.source.blockNumber).toLocaleString()}</span>
+        <a href="${etherscan(catalog.source.contract)}">CryptoPunksData ↗</a>
+        <a href="${etherscan("0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB")}">CryptoPunksMarket ↗</a>
+      `;
+    }
+    bindNavigation();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown Ethereum error.";
-    stage.classList.remove("is-loading");
-    stage.innerHTML = `<div class="error-mark">!</div><p>Ethereum read unavailable</p>`;
-    record.innerHTML = `<p class="eyebrow">The failure is visible</p><h2>Could not load Punk #${id}</h2><p>${message}</p><p>Try your own RPC below. A decentralised client must fail legibly and remain reconfigurable.</p>`;
+    const message =
+      error instanceof Error ? error.message : "Unknown Ethereum error.";
+    const heading = document.querySelector<HTMLDivElement>(".punk-heading");
+    if (heading) {
+      heading.innerHTML = `<p class="kicker">Ethereum read unavailable</p><h1>${id}</h1><p>${escapeHtml(message)}</p><p>Configure another Ethereum endpoint from the homepage.</p>`;
+    }
   }
 }
 
-function updateRpcSummary() {
-  const rpcs = getRpcList();
-  rpcSummary.textContent = `${rpcs.length} endpoint${rpcs.length === 1 ? "" : "s"} configured. First: ${rpcs[0]}`;
-  rpcInput.value = localStorage.getItem("punks-permanent-rpc") ?? "";
+function renderHomepage() {
+  document.title = "CryptoPunks";
+  app.innerHTML = `
+    ${navigation}
+    <main>
+      <section class="home-hero">
+        <div>
+          <p class="kicker">10,000 unique collectible characters</p>
+          <h1>CryptoPunks</h1>
+          <p>Proof of ownership, artwork and the zero-fee native market live on Ethereum. This independent interface is being rebuilt for long-term survival.</p>
+          ${searchForm("7804")}
+        </div>
+        <div class="sample-punk" id="sample-punk"><span>Reading Punk #7804 from Ethereum…</span></div>
+      </section>
+      <section class="parity-status">
+        <p class="kicker">Parity programme</p>
+        <h2>The complete website, without an indispensable server.</h2>
+        <div>
+          <article><strong>10,000</strong><span>attribute records read from CryptoPunksData</span></article>
+          <article><strong>2</strong><span>canonical contracts in the essential read path</span></article>
+          <article><strong>0</strong><span>official APIs required for this milestone</span></article>
+        </div>
+        <a href="/cryptopunks/details/7804" data-link>Open the first parity-complete route →</a>
+      </section>
+      <section class="rpc-settings">
+        <div>
+          <p class="kicker">Your doorway, your node</p>
+          <h2>Choose the Ethereum connection.</h2>
+        </div>
+        <form id="rpc-form">
+          <label for="rpc-url">Custom RPC URL</label>
+          <input id="rpc-url" type="url" placeholder="http://localhost:8545">
+          <button type="submit">Save endpoint</button>
+          <button type="button" id="clear-rpc">Use fallbacks</button>
+          <small id="rpc-summary"></small>
+        </form>
+      </section>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+  bindRpcSettings();
+
+  void loadPunk(7804).then((record) => {
+    const sample = document.querySelector<HTMLDivElement>("#sample-punk");
+    if (sample) {
+      sample.innerHTML = `<a href="${punkRoute(7804)}" data-link><img src="${svgDataUrl(record.svg)}" alt="CryptoPunk #7804"><span>Punk #7804 · Onchain SVG</span></a>`;
+      bindNavigation();
+    }
+  });
 }
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  void renderPunk(Number(input.value));
-});
+async function renderAllPunks() {
+  document.title = "All CryptoPunks - CryptoPunks";
+  app.innerHTML = `
+    ${navigation}
+    <main class="collection-page">
+      <header>
+        <p class="kicker">The complete collection</p>
+        <h1>All CryptoPunks</h1>
+        <p>10,000 unique, 24 × 24 pixel portraits. Select any position in the canonical composite to open its onchain record.</p>
+        ${searchForm()}
+      </header>
+      <section class="collection-summary" id="collection-summary" aria-label="Collection type counts">
+        <span>Reading the deterministic attribute snapshot…</span>
+      </section>
+      <section class="punk-map-section" aria-labelledby="punk-map-title">
+        <div class="map-heading">
+          <div>
+            <p class="kicker">100 × 100 canonical arrangement</p>
+            <h2 id="punk-map-title">Interactive CryptoPunks map</h2>
+          </div>
+          <output id="map-selection">Move across the map to identify a Punk.</output>
+        </div>
+        <button class="punk-map" id="punk-map" type="button" aria-label="Interactive map of all 10,000 CryptoPunks">
+          <img src="/assets/punks.png" alt="All 10,000 CryptoPunks in their canonical 100 by 100 arrangement">
+          <span class="map-cursor" id="map-cursor" hidden></span>
+        </button>
+        <p class="map-provenance">Composite SHA-256 <code>ac39af4793119ee46bbff351d8cb6b5f23da60222126add4268e261199a2921b</code>, matching the hash embedded in CryptoPunksMarket.</p>
+      </section>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
 
-rpcForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  setCustomRpc(rpcInput.value);
-  updateRpcSummary();
-  void renderPunk(Number(input.value));
-});
+  const map = document.querySelector<HTMLButtonElement>("#punk-map");
+  const cursor = document.querySelector<HTMLSpanElement>("#map-cursor");
+  const selection = document.querySelector<HTMLOutputElement>("#map-selection");
+  let selectedId = 0;
 
-document.querySelector("#clear-rpc")?.addEventListener("click", () => {
-  setCustomRpc("");
-  updateRpcSummary();
-  void renderPunk(Number(input.value));
-});
+  const locate = (event: PointerEvent) => {
+    if (!map) return 0;
+    const rect = map.getBoundingClientRect();
+    const column = Math.max(
+      0,
+      Math.min(99, Math.floor(((event.clientX - rect.left) / rect.width) * 100)),
+    );
+    const row = Math.max(
+      0,
+      Math.min(99, Math.floor(((event.clientY - rect.top) / rect.height) * 100)),
+    );
+    selectedId = row * 100 + column;
+    if (cursor) {
+      cursor.hidden = false;
+      cursor.style.left = `${column}%`;
+      cursor.style.top = `${row}%`;
+    }
+    if (selection) selection.textContent = `CryptoPunk #${selectedId}`;
+    return selectedId;
+  };
 
-const initial = Number(new URLSearchParams(location.search).get("punk") ?? 7804);
-input.value = String(Number.isInteger(initial) && initial >= 0 && initial <= 9999 ? initial : 7804);
-updateRpcSummary();
-void renderPunk(Number(input.value));
+  map?.addEventListener("pointermove", locate);
+  map?.addEventListener("pointerleave", () => {
+    if (cursor) cursor.hidden = true;
+  });
+  map?.addEventListener("click", (event) => {
+    const id = locate(event);
+    history.pushState(null, "", punkRoute(id));
+    void renderRoute();
+  });
+
+  try {
+    const catalog = await loadCatalog();
+    const summary = document.querySelector<HTMLElement>("#collection-summary");
+    if (summary) {
+      summary.innerHTML = Object.entries(catalog.counts.types)
+        .map(
+          ([type, count]) =>
+            `<a href="/cryptopunks/search?query=${encodeURIComponent(type)}" data-link><strong>${count.toLocaleString()}</strong><span>${type}</span></a>`,
+        )
+        .join("");
+      bindNavigation();
+    }
+  } catch (error) {
+    const summary = document.querySelector<HTMLElement>("#collection-summary");
+    if (summary) {
+      summary.textContent =
+        error instanceof Error ? error.message : "Attribute snapshot unavailable.";
+    }
+  }
+}
+
+function punkThumbnail(id: number) {
+  const column = id % 100;
+  const row = Math.floor(id / 100);
+  return `<span class="punk-thumbnail" style="--punk-x:${(column / 99) * 100}%;--punk-y:${(row / 99) * 100}%"></span>`;
+}
+
+async function renderSearch() {
+  const parameters = new URLSearchParams(location.search);
+  const query = parameters.get("query")?.trim() ?? "";
+  const page = Math.max(0, Number(parameters.get("page") ?? 0) || 0);
+  const perPage = 120;
+  document.title = `${query || "Search"} - CryptoPunks`;
+  app.innerHTML = `
+    ${navigation}
+    <main class="search-page">
+      <header>
+        <p class="kicker">Collection search</p>
+        <h1>Search CryptoPunks</h1>
+        ${searchForm(query)}
+      </header>
+      <section id="search-results" aria-live="polite">
+        <p>Searching the block-labelled onchain attribute snapshot…</p>
+      </section>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  try {
+    const catalog = await loadCatalog();
+    const normalized = query.toLocaleLowerCase();
+    const numericId = /^\d+$/.test(query) ? Number(query) : undefined;
+    const matches = catalog.punks
+      .map((attributes, id) => ({ attributes, id }))
+      .filter(({ attributes, id }) => {
+        if (numericId !== undefined) return id === numericId;
+        return attributes.some((attribute) =>
+          normalizePunkType(attribute).toLocaleLowerCase().includes(normalized),
+        );
+      });
+    const start = page * perPage;
+    const visible = matches.slice(start, start + perPage);
+    const pages = Math.ceil(matches.length / perPage);
+    const results = document.querySelector<HTMLElement>("#search-results");
+
+    if (!results) return;
+    results.innerHTML = `
+      <div class="results-heading">
+        <div><strong>${matches.length.toLocaleString()}</strong><span>Punks Found</span></div>
+        <p>Snapshot block ${Number(catalog.source.blockNumber).toLocaleString()}</p>
+      </div>
+      ${
+        visible.length
+          ? `<div class="punk-results">
+              ${visible
+                .map(
+                  ({ attributes, id }) => `
+                    <a href="${punkRoute(id)}" data-link>
+                      ${punkThumbnail(id)}
+                      <strong>#${id}</strong>
+                      <span>${normalizePunkType(attributes[0])} · ${attributes.slice(1).join(", ") || "No attributes"}</span>
+                    </a>
+                  `,
+                )
+                .join("")}
+            </div>`
+          : `<div class="no-results"><h2>No Punks found.</h2><p>Try a type such as Alien or an attribute such as Pipe.</p></div>`
+      }
+      ${
+        pages > 1
+          ? `<nav class="result-pagination" aria-label="Search result pages">
+              ${page > 0 ? `<a href="/cryptopunks/search?query=${encodeURIComponent(query)}&page=${page - 1}" data-link>← Previous</a>` : "<span></span>"}
+              <span>Page ${page + 1} of ${pages}</span>
+              ${page + 1 < pages ? `<a href="/cryptopunks/search?query=${encodeURIComponent(query)}&page=${page + 1}" data-link>Next →</a>` : "<span></span>"}
+            </nav>`
+          : ""
+      }
+    `;
+    bindNavigation();
+  } catch (error) {
+    const results = document.querySelector<HTMLElement>("#search-results");
+    if (results) {
+      results.textContent =
+        error instanceof Error ? error.message : "Search snapshot unavailable.";
+    }
+  }
+}
+
+function bindRpcSettings() {
+  const form = document.querySelector<HTMLFormElement>("#rpc-form");
+  const input = document.querySelector<HTMLInputElement>("#rpc-url");
+  const summary = document.querySelector<HTMLElement>("#rpc-summary");
+  const clear = document.querySelector<HTMLButtonElement>("#clear-rpc");
+
+  const update = () => {
+    const rpcs = getRpcList();
+    if (summary) {
+      summary.textContent = `${rpcs.length} endpoint${rpcs.length === 1 ? "" : "s"} configured. First: ${rpcs[0]}`;
+    }
+    if (input) {
+      input.value = localStorage.getItem("punks-permanent-rpc") ?? "";
+    }
+  };
+
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setCustomRpc(input?.value ?? "");
+    update();
+  });
+  clear?.addEventListener("click", () => {
+    setCustomRpc("");
+    update();
+  });
+  update();
+}
+
+function renderPlannedRoute() {
+  const route = location.pathname + location.search;
+  document.title = "CryptoPunks — parity route in progress";
+  app.innerHTML = `
+    ${navigation}
+    <main class="planned-page">
+      <p class="kicker">Route inventory</p>
+      <h1>This CryptoPunks route is in the parity queue.</h1>
+      <p><code>${escapeHtml(route)}</code></p>
+      <p>The interface will be backed by Ethereum and reproducible snapshots. It will not silently substitute an official API.</p>
+      ${searchForm()}
+      <a href="/" data-link>← Return to the working routes</a>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+}
+
+function renderNotFound(message: string) {
+  document.title = "CryptoPunks — not found";
+  app.innerHTML = `
+    ${navigation}
+    <main class="planned-page">
+      <p class="kicker">Not found</p>
+      <h1>${message}</h1>
+      ${searchForm()}
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+}
+
+async function renderRoute() {
+  window.scrollTo(0, 0);
+  const detailMatch = location.pathname.match(
+    /^\/cryptopunks\/details\/(\d+)\/?$/,
+  );
+
+  if (detailMatch) {
+    await renderPunkDetail(Number(detailMatch[1]));
+  } else if (location.pathname === "/") {
+    renderHomepage();
+  } else if (
+    location.pathname === "/cryptopunks" ||
+    location.pathname === "/cryptopunks/"
+  ) {
+    await renderAllPunks();
+  } else if (location.pathname === "/cryptopunks/search") {
+    await renderSearch();
+  } else {
+    renderPlannedRoute();
+  }
+}
+
+window.addEventListener("popstate", () => void renderRoute());
+void renderRoute();

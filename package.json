@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "data:attributes": "node scripts/build-attributes-snapshot.mjs",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit && node scripts/verify-data.mjs"
   },
   "dependencies": {
     "viem": "^2.38.6"
