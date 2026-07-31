@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "data:attributes": "node scripts/build-attributes-snapshot.mjs",
     "data:history": "node scripts/build-market-history.mjs",
+    "data:repair-history": "node scripts/repair-zero-buyers.mjs",
+    "data:market": "node scripts/build-market-state.mjs && node scripts/build-market-views.mjs",
     "preview": "vite preview",
     "check": "tsc --noEmit && node scripts/verify-data.mjs"
   },

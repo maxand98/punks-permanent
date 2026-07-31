@@ -47,6 +47,8 @@ independent, unofficial client.
 - Open-source deterministic log indexer.
 - Versioned event schema and golden test vectors.
 - Content-addressed snapshots for fast startup.
+- Browser-side tail synchronisation from the checkpoint to the latest reachable
+  Ethereum block; a checkpoint is never labelled live until this completes.
 - Full chain-log replay as the slower trustless fallback.
 - Derived figures label their block number and derivation version.
 
@@ -82,8 +84,8 @@ Exit: scope, legal boundary and acceptance tests are public.
 ### Phase 1 — complete read-only collection client
 
 - [ ] All 10,000 Punks with virtualised browse, search and trait filters.
-- [ ] Owner pages, bids, offers, transfers and sales.
-- [ ] Block-number-labelled data and visible source provenance.
+- [x] Owner pages, bids, offers, transfers and sales.
+- [x] Block-number-labelled checkpoints and visible live-sync status.
 - [ ] RPC health, offline states, local cache and accessibility.
 - [ ] Direct contract mode that works without an indexer.
 
@@ -96,7 +98,7 @@ Exit: core collection browsing survives loss of every official API.
 - [x] Generate block-labelled, independently checksummed history snapshots.
 - [x] Verify snapshot output against known onchain Punk histories.
 - [ ] Specify V1 history as a separately labelled historical collection.
-- [ ] Add reproducible owners, leaderboards and market statistics.
+- [x] Add reproducible owners, leaderboards and ETH market statistics.
 
 Exit: a third party can reconstruct every displayed derived value.
 

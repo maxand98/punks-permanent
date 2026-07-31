@@ -12,12 +12,19 @@ import {
   svgDataUrl,
   type PunkRecord,
 } from "./ethereum";
-import { formatEther } from "viem";
+import { formatEther, getAddress, isAddress } from "viem";
 import {
   loadPunkHistory,
   type HistoryManifest,
   type MarketEvent,
 } from "./history";
+import {
+  loadMarketState,
+  loadMarketViews,
+  syncMarketState,
+  type GlobalMarketEvent,
+  type MarketSync,
+} from "./market";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
@@ -562,6 +569,422 @@ function punkThumbnail(id: number) {
   return `<span class="punk-thumbnail" style="--punk-x:${(column / 99) * 100}%;--punk-y:${(row / 99) * 100}%"></span>`;
 }
 
+type MarketResult = MarketSync & { error?: string };
+
+async function loadCurrentMarket(): Promise<MarketResult> {
+  try {
+    return await syncMarketState();
+  } catch (error) {
+    const state = await loadMarketState();
+    return {
+      state,
+      checkpointBlock: Number(state.source.blockNumber),
+      latestBlock: Number(state.source.blockNumber),
+      synced: false,
+      newEvents: [],
+      error:
+        error instanceof Error ? error.message : "Ethereum sync unavailable.",
+    };
+  }
+}
+
+function formatEth(valueWei: string, maximumFractionDigits = 4) {
+  return Number(formatEther(BigInt(valueWei))).toLocaleString("en", {
+    maximumFractionDigits,
+  });
+}
+
+function eventDate(timestamp: number) {
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(timestamp * 1000));
+}
+
+function syncNotice(market: MarketResult) {
+  if (market.synced) {
+    return `
+      <div class="sync-notice sync-live">
+        <strong>Live Ethereum state</strong>
+        <span>Checkpoint ${market.checkpointBlock.toLocaleString()} synchronised through block ${market.latestBlock.toLocaleString()}.</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="sync-notice sync-checkpoint">
+      <strong>Checkpoint view — not live</strong>
+      <span>Showing block ${market.checkpointBlock.toLocaleString()}. Connect a working Ethereum RPC to synchronise newer events. ${escapeHtml(market.error ?? "")}</span>
+    </div>
+  `;
+}
+
+function routePagination(
+  route: string,
+  page: number,
+  pages: number,
+  parameters = new URLSearchParams(),
+) {
+  const href = (target: number) => {
+    const next = new URLSearchParams(parameters);
+    next.set("page", String(target));
+    return `${route}?${next}`;
+  };
+  if (pages <= 1) return "";
+  return `
+    <nav class="result-pagination" aria-label="Result pages">
+      ${page > 0 ? `<a href="${href(page - 1)}" data-link>← Previous</a>` : "<span></span>"}
+      <span>Page ${page + 1} of ${pages}</span>
+      ${page + 1 < pages ? `<a href="${href(page + 1)}" data-link>Next →</a>` : "<span></span>"}
+    </nav>
+  `;
+}
+
+function marketPageHeader(kicker: string, title: string, description: string) {
+  return `
+    <header class="market-page-header">
+      <p class="kicker">${kicker}</p>
+      <h1>${title}</h1>
+      <p>${description}</p>
+    </header>
+  `;
+}
+
+function globalEventRows(events: GlobalMarketEvent[]) {
+  return events
+    .map(
+      (event) => `
+        <tr>
+          <td>
+            <a class="market-punk" href="${punkRoute(event.punk)}" data-link>
+              ${punkThumbnail(event.punk)}
+              <strong>#${event.punk}</strong>
+            </a>
+          </td>
+          <td><span class="event-type event-${event.type}">${historyLabel(event.type)}</span></td>
+          <td>${historyAddress(event.from)}</td>
+          <td>${historyAddress(event.to ?? event.onlyTo)}</td>
+          <td class="history-amount">${event.valueWei ? `${formatEth(event.valueWei, 6)} ETH` : ""}</td>
+          <td><a href="https://etherscan.io/tx/${event.transactionHash}" title="Block ${event.block.toLocaleString()}">${eventDate(event.timestamp)} ↗</a></td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
+function mergeEvents(
+  baseline: GlobalMarketEvent[],
+  tail: GlobalMarketEvent[],
+) {
+  const byPosition = new Map<string, GlobalMarketEvent>();
+  for (const event of [...baseline, ...tail]) {
+    byPosition.set(
+      `${event.transactionHash}:${event.logIndex}:${event.type}`,
+      event,
+    );
+  }
+  return [...byPosition.values()].sort(
+    (a, b) =>
+      b.block - a.block ||
+      b.transactionIndex - a.transactionIndex ||
+      b.logIndex - a.logIndex,
+  );
+}
+
+async function renderOwners() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 100;
+  document.title = "CryptoPunks Owners - CryptoPunks";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Ethereum ownership",
+        "Top CryptoPunk Owners",
+        "Ranked from canonical CryptoPunksMarket ownership, beginning with a reproducible checkpoint and synchronised in this browser.",
+      )}
+      <div id="market-route"><p>Synchronising ownership with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const market = await loadCurrentMarket();
+  const start = page * perPage;
+  const visible = market.state.owners.slice(start, start + perPage);
+  const pages = Math.ceil(market.state.owners.length / perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${market.state.totals.owners.toLocaleString()}</strong><span>Owners</span></article>
+      <article><strong>10,000</strong><span>Punks</span></article>
+      <article><strong>${market.state.totals.publicOffers.toLocaleString()}</strong><span>Publicly offered</span></article>
+    </div>
+    <div class="market-table-wrap">
+      <table class="market-table owners-table">
+        <thead><tr><th>Rank</th><th>Owner</th><th>Punks</th><th>Sample holdings</th></tr></thead>
+        <tbody>
+          ${visible
+            .map(
+              (owner, index) => `
+                <tr>
+                  <td>${(start + index + 1).toLocaleString()}</td>
+                  <td><a href="/cryptopunks/accountinfo?account=${owner.address}" data-link>${shortAddress(owner.address)}</a></td>
+                  <td><strong>${owner.count.toLocaleString()}</strong></td>
+                  <td>
+                    <div class="owner-samples">
+                      ${owner.punks
+                        .slice(0, 8)
+                        .map(
+                          (id) =>
+                            `<a href="${punkRoute(id)}" title="Punk #${id}" data-link>${punkThumbnail(id)}</a>`,
+                        )
+                        .join("")}
+                    </div>
+                  </td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/owners", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderAccountInfo() {
+  const value =
+    new URLSearchParams(location.search).get("account")?.trim() ?? "";
+  if (!isAddress(value)) {
+    renderNotFound("Enter a valid Ethereum address to view its CryptoPunks.");
+    return;
+  }
+  const address = getAddress(value);
+  document.title = `${shortAddress(address)} - CryptoPunks Owner`;
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Owner account",
+        shortAddress(address),
+        "Current CryptoPunks held by this Ethereum address.",
+      )}
+      <div id="market-route"><p>Synchronising this account with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const market = await loadCurrentMarket();
+  const owner = market.state.owners.find(
+    (entry) => entry.address.toLowerCase() === address.toLowerCase(),
+  );
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  const punks = owner?.punks ?? [];
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="account-heading">
+      <div><strong>${punks.length.toLocaleString()}</strong><span>CryptoPunks owned</span></div>
+      <a href="${etherscan(address)}">${address} ↗</a>
+    </div>
+    ${
+      punks.length
+        ? `<div class="punk-results account-punks">
+            ${punks
+              .map(
+                (id) => `
+                  <a href="${punkRoute(id)}" data-link>
+                    ${punkThumbnail(id)}
+                    <strong>#${id}</strong>
+                    <span>${market.state.punks[id].offer ? `${formatEth(market.state.punks[id].offer!.valueWei)} ETH offer` : "Not offered for sale"}</span>
+                  </a>
+                `,
+              )
+              .join("")}
+          </div>`
+        : '<div class="no-results"><h2>No CryptoPunks held.</h2><p>This address owns no Punks at the displayed Ethereum block.</p></div>'
+    }
+  `;
+  bindNavigation();
+}
+
+async function renderLargestSales() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 50;
+  document.title = "Largest CryptoPunks Sales";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Native market history",
+        "Largest Sales",
+        "Paid PunkBought events ranked by their onchain ETH value. No hosted marketplace API is used.",
+      )}
+      <div id="market-route"><p>Loading and synchronising market history…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const paidTail = market.newEvents.filter(
+    (event) => event.type === "bought" && BigInt(event.valueWei ?? 0) > 0n,
+  );
+  const sales = mergeEvents(views.largestSales, paidTail).sort((a, b) => {
+    const difference = BigInt(b.valueWei ?? 0) - BigInt(a.valueWei ?? 0);
+    return difference === 0n ? b.block - a.block : difference > 0n ? 1 : -1;
+  });
+  const pages = Math.ceil(sales.length / perPage);
+  const visible = sales.slice(page * perPage, (page + 1) * perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${views.totals.paidSales.toLocaleString()}</strong><span>Paid sales recorded</span></article>
+      <article><strong>${formatEth(views.sales.allTime.volumeWei, 0)}</strong><span>ETH all-time volume</span></article>
+      <article><strong>${formatEth(views.sales.lastYear.averageWei, 2)}</strong><span>Average ETH · last year</span></article>
+    </div>
+    <div class="market-table-wrap">
+      <table class="market-table">
+        <thead><tr><th>Punk</th><th>Event</th><th>From</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>${globalEventRows(visible)}</tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/largest-sales", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderTransactions() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 50;
+  document.title = "Recent CryptoPunks Transactions";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Ethereum event stream",
+        "Recent Transactions",
+        "Offers, bids, transfers and sales decoded directly from CryptoPunksMarket logs.",
+      )}
+      <div id="market-route"><p>Synchronising recent transactions…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const events = mergeEvents(views.recentTransactions, market.newEvents);
+  const pages = Math.ceil(events.length / perPage);
+  const visible = events.slice(page * perPage, (page + 1) * perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-table-wrap">
+      <table class="market-table">
+        <thead><tr><th>Punk</th><th>Event</th><th>From</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>${globalEventRows(visible)}</tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/transactions", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderBids() {
+  document.title = "CryptoPunks Bids";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Native bids",
+        "CryptoPunk Bids",
+        "Open bids from current contract state, followed by the recent onchain bid history.",
+      )}
+      <div id="market-route"><p>Synchronising bids with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const open = market.state.punks
+    .map((punk, id) => ({ id, bid: punk.bid }))
+    .filter(
+      (entry): entry is { id: number; bid: NonNullable<typeof entry.bid> } =>
+        Boolean(entry.bid),
+    )
+    .sort((a, b) => {
+      const difference = BigInt(b.bid.valueWei) - BigInt(a.bid.valueWei);
+      return difference > 0n ? 1 : difference < 0n ? -1 : a.id - b.id;
+    });
+  const recent = mergeEvents(
+    views.recentBids,
+    market.newEvents.filter((event) => event.type === "bid"),
+  ).slice(0, 100);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${open.length.toLocaleString()}</strong><span>Open bids</span></article>
+      <article><strong>${market.state.totals.publicOffers.toLocaleString()}</strong><span>Public offers</span></article>
+      <article><strong>${views.totals.bids.toLocaleString()}</strong><span>Historical bids</span></article>
+    </div>
+    <section class="market-subsection">
+      <h2>Current Open Bids</h2>
+      <div class="open-bid-grid">
+        ${open
+          .map(
+            ({ id, bid }) => `
+              <a href="${punkRoute(id)}" data-link>
+                ${punkThumbnail(id)}
+                <strong>#${id}</strong>
+                <span>${formatEth(bid.valueWei, 6)} ETH</span>
+                <small>by ${shortAddress(bid.bidder)}</small>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+    <section class="market-subsection">
+      <h2>Recent Bid Events</h2>
+      <div class="market-table-wrap">
+        <table class="market-table">
+          <thead><tr><th>Punk</th><th>Event</th><th>Bidder</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+          <tbody>${globalEventRows(recent)}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+  bindNavigation();
+}
+
 async function renderSearch() {
   const parameters = new URLSearchParams(location.search);
   const query = parameters.get("query")?.trim() ?? "";
@@ -721,6 +1144,16 @@ async function renderRoute() {
     await renderAllPunks();
   } else if (location.pathname === "/cryptopunks/search") {
     await renderSearch();
+  } else if (location.pathname === "/cryptopunks/owners") {
+    await renderOwners();
+  } else if (location.pathname === "/cryptopunks/accountinfo") {
+    await renderAccountInfo();
+  } else if (location.pathname === "/cryptopunks/largest-sales") {
+    await renderLargestSales();
+  } else if (location.pathname === "/cryptopunks/transactions") {
+    await renderTransactions();
+  } else if (location.pathname === "/cryptopunks/bids") {
+    await renderBids();
   } else {
     renderPlannedRoute();
   }
