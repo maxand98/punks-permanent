@@ -21,6 +21,7 @@ const fixedRoutes = [
   "cryptopunks/sales",
   "cryptopunks/wrapped",
   "cryptopunks/terms",
+  "notifications",
 ];
 const routes = [
   ...fixedRoutes,

@@ -15,9 +15,9 @@ const checksums = (
     return { sha256, path };
   });
 
-if (manifest.routes.generatedShells !== 10_018) {
+if (manifest.routes.generatedShells !== 10_019) {
   throw new Error(
-    `Expected 10,018 route shells, received ${manifest.routes.generatedShells}.`,
+    `Expected 10,019 route shells, received ${manifest.routes.generatedShells}.`,
   );
 }
 for (const path of [
@@ -25,6 +25,7 @@ for (const path of [
   "cryptopunks/owners/index.html",
   "cryptopunks/details/0/index.html",
   "cryptopunks/details/9999/index.html",
+  "notifications/index.html",
   "route-manifest.json",
 ]) {
   await readFile(new URL(path, DIST));
