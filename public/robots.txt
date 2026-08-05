@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Cloudflare Content Signals: permit search and agent retrieval, not model training.
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+Sitemap: https://cryptopunks.website/sitemap.xml
+

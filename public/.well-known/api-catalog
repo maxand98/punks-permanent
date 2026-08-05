@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "name": "Punks Permanent public datasets",
+  "description": "Read-only deterministic CryptoPunks attribute and native-market history snapshots.",
+  "homepage": "https://cryptopunks.website/",
+  "openapi": "https://cryptopunks.website/.well-known/openapi.json",
+  "documentation": "https://cryptopunks.website/llms-full.txt",
+  "authentication": "No authentication is required. These resources are static snapshots; use Ethereum RPC for current state."
+}
+

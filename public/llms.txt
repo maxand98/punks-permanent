@@ -1,0 +1,25 @@
+# CryptoPunks Website — Punks Permanent
+
+> An independent, unofficial, read-only interface for CryptoPunks, designed to remain reproducible without depending on one domain, host, API, indexer, image server, or preferred RPC.
+
+## Preferred public sources
+
+- [Collection interface](https://cryptopunks.website/cryptopunks): Interactive map of all 10,000 CryptoPunks.
+- [Attribute snapshot](https://cryptopunks.website/data/punks-attributes.json): Deterministic attributes for all 10,000 Punks at Ethereum block 25,642,625.
+- [Market history manifest](https://cryptopunks.website/data/history-manifest.json): Checksums and ranges for 100 history shards containing 343,107 decoded native-market events through block 25,642,805.
+- [Full agent guide](https://cryptopunks.website/llms-full.txt): Contracts, data provenance, route conventions, and wallet boundaries.
+- [API catalogue](https://cryptopunks.website/.well-known/api-catalog): Machine-readable dataset discovery.
+- [OpenAPI description](https://cryptopunks.website/.well-known/openapi.json): Static JSON resource definitions.
+- [Agent Skill](https://cryptopunks.website/.well-known/agent-skills/cryptopunks-research/SKILL.md): Reusable research procedure.
+
+## Canonical identifiers
+
+- CryptoPunksMarket: `0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB` on Ethereum mainnet.
+- CryptoPunksData: `0x16f5a35647d6f03d5d3da7b35409d65ba03af3b2` on Ethereum mainnet.
+- Punk identifiers are integers from 0 through 9999.
+- Detail routes use `/cryptopunks/details/{id}`.
+
+## Status and boundaries
+
+This is not the official CryptoPunks website. The current interface is read-only and wallet transaction controls are disabled. Attribute and market-history snapshots are observations at stated Ethereum blocks; query the contracts for current ownership, offers, and bids. Artwork and names remain subject to their respective rights and terms.
+

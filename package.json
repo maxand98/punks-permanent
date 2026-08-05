@@ -9,13 +9,15 @@
     "data:attributes": "node scripts/build-attributes-snapshot.mjs",
     "data:history": "node scripts/build-market-history.mjs",
     "preview": "vite preview",
-    "check": "tsc --noEmit && node scripts/verify-data.mjs"
+    "check": "tsc --noEmit && node scripts/verify-data.mjs && node scripts/verify-agent-files.mjs",
+    "deploy": "npm run check && npm run build && wrangler deploy --keep-vars"
   },
   "dependencies": {
     "viem": "^2.38.6"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "wrangler": "^4.118.0"
   }
 }

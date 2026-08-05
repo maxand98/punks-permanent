@@ -1,0 +1,41 @@
+# Punks Permanent agent guide
+
+Punks Permanent is an independently operable and decentralisation-oriented interface for CryptoPunks. The canonical artwork data and native market state live on Ethereum; this website is an unofficial doorway and reproducible dataset host.
+
+## Contracts
+
+- Ethereum chain ID: `1`.
+- CryptoPunksMarket: `0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB`.
+- CryptoPunksData: `0x16f5a35647d6f03d5d3da7b35409d65ba03af3b2`.
+
+Contract address plus Punk ID is the preferred identifier. Display names and traits are descriptive, not ownership proof.
+
+## Deterministic datasets
+
+### Attributes
+
+`/data/punks-attributes.json` contains `punkAttributes(uint16)` output for all 10,000 Punks from CryptoPunksData at Ethereum block 25,642,625. It includes aggregate counts by Punk type, attribute, and attribute count.
+
+### Native-market history
+
+`/data/history-manifest.json` describes 100 shards under `/data/history/00.json` through `/data/history/99.json`. Each shard covers 100 Punk IDs and has a SHA-256 checksum. The snapshot contains 343,107 decoded events from the CryptoPunksMarket deployment block 3,914,495 through block 25,642,805, covering all 10,000 Punks.
+
+The decoded event classes are PunkTransfer, PunkOffered, PunkBidEntered, PunkBidWithdrawn, PunkBought, and PunkNoLongerForSale. The retrieval source recorded in the manifest is Ethereum logs via Blockscout API v1, independently reproducible from an archive node.
+
+## Research workflow
+
+1. Validate the Punk ID is an integer from 0 through 9999.
+2. Read `/data/punks-attributes.json` for snapshot traits and type.
+3. Select the history shard by zero-padded `floor(id / 100)` and verify its checksum against the manifest when evidentiary integrity matters.
+4. Use `/cryptopunks/details/{id}` for the human-facing record.
+5. Query the Ethereum contracts through a trusted RPC for current ownership, offer, or bid state. Report the block number used.
+6. Cite the dataset URL, Punk ID, contract, and snapshot block. Do not describe snapshot state as current without a fresh chain read.
+
+## Wallet and transaction policy
+
+The current interface is deliberately read-only and its wallet actions are disabled. An agent can perform public RPC reads without a wallet. If transaction support is added later, use a dedicated agent wallet rather than a user's primary wallet, require explicit user confirmation for purchases or bids, and enforce contract allowlists, per-transaction caps, and short-lived spending allowances. Never infer authority to sign or spend from permission to research.
+
+## Independence and rights
+
+The application source is published at `https://github.com/maxand98/punks-permanent` under CC0-1.0. CryptoPunks artwork and names remain subject to their respective rights and terms. This interface is independent and unofficial.
+

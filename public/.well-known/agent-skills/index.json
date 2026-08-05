@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "skills": [
+    {
+      "name": "cryptopunks-research",
+      "description": "Research CryptoPunks traits, provenance, and current contract state.",
+      "url": "https://cryptopunks.website/.well-known/agent-skills/cryptopunks-research/SKILL.md",
+      "digest": "sha256:181a2b529c681e50c85b07692d20979724bbb3046ee4d4d4203816b15116651f"
+    }
+  ]
+}
