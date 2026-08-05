@@ -13,13 +13,15 @@
     "preview": "vite preview",
     "check": "tsc --noEmit && node scripts/verify-data.mjs",
     "check:release": "node scripts/verify-release.mjs",
-    "release": "npm run check && npm run build && npm run check:release"
+    "release": "npm run check && npm run build && npm run check:release",
+    "deploy:cloudflare": "npm run release && wrangler deploy"
   },
   "dependencies": {
     "viem": "^2.38.6"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "wrangler": "^4.118.0"
   }
 }

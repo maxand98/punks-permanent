@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cryptopunks-website",
+  "compatibility_date": "2026-08-05",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "cryptopunks.website",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.cryptopunks.website",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

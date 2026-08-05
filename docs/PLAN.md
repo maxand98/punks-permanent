@@ -115,13 +115,18 @@ Exit: the native market remains usable with no project-controlled backend.
 
 ### Phase 4 — immutable release system
 
-- [ ] Deterministic build in CI and independently reproduced checksum (workflow
-      and local release verifier implemented; independent CI result pending).
+- [x] Deterministic build and checksum verification in local and GitHub CI
+      environments (independent operator reproduction remains pending).
 - [ ] Signed manifest, dependency lock, SBOM and restore instructions
       (unsigned release manifest and checksums implemented).
-- [ ] Publish to IPFS and Arweave; verify from independent gateways/nodes.
+- [x] Produce and locally pin the first verified IPFS release CID; mirror the
+      same payload at `cryptopunks.website` through a replaceable Cloudflare
+      Worker (independent pins and Arweave copy remain pending).
+- [ ] Publish the same release to independent IPFS pins and Arweave; verify
+      retrieval from independent gateways and nodes.
 - [ ] Establish independent pinning partners and a public responsibility map.
-- [ ] Register `cryptopunks.website` and `cryptopunkswebsite.eth`.
+- [x] Register and activate `cryptopunks.website`.
+- [ ] Register `cryptopunkswebsite.eth`.
 - [ ] Configure the ENS contenthash and conventional-domain mirror.
 
 Exit: a release survives loss of GitHub, DNS and the primary host.

@@ -88,3 +88,17 @@ After the CID has been independently verified:
 
 Updating ENS or DNS is an owner-authorised release action. Building and hashing
 the payload does not require custody of either name.
+
+## Cloudflare mirror
+
+Cloudflare is a replaceable HTTPS mirror, not the canonical archive. Deploy the
+same verified `dist/` payload with:
+
+```sh
+npm run deploy:cloudflare
+```
+
+The Worker configuration binds both `cryptopunks.website` and
+`www.cryptopunks.website`. After deployment, verify representative direct
+routes and compare `release-manifest.json` with the IPFS release before treating
+the mirror as healthy.
