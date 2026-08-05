@@ -77,6 +77,30 @@
 .wallet-primary { background: #ea34b0; color: #fff; }
 .wallet-secondary { margin-top: 10px; border: 1px solid #ea34b0; background: #fff; color: #ea34b0; }
 .wallet-message { margin: 14px 0 0; color: #777; font-size: 11px; overflow-wrap: anywhere; }
+.wallet-intent,
+.wallet-price { margin: -9px 0 22px; color: #ea34b0; font-size: 16px; font-weight: 700; }
+.wallet-back {
+  margin: 0 0 18px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #ea34b0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wallet-form { display: grid; gap: 9px; }
+.wallet-form label { margin-top: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.wallet-form input {
+  width: 100%;
+  border: 1px solid #aaa;
+  border-radius: 0;
+  padding: 12px;
+  background: #fff;
+  color: #202020;
+  font-size: 13px;
+}
+.wallet-confirmation-note { margin: 18px 0; color: #888; font-size: 11px; line-height: 1.45; }
+.wallet-transaction-link { display: block; margin-top: 12px; color: #ea34b0; font-size: 11px; font-weight: 700; }
 .wallet-tab {
   display: none;
   min-width: 48px;
@@ -167,17 +191,23 @@
 
 .official-footer {
   display: block;
-  padding: 48px max(20px, calc((100vw - 1152px) / 2)) 24px;
+  padding: 40px 20px 12px;
   border: 0;
-  background: #df46a6;
+  background: #ea34b0;
   color: #fff;
   font: 400 14px/1.45 Montserrat, sans-serif;
 }
-.official-footer-grid { display: grid; grid-template-columns: repeat(3, 180px); gap: 18px; }
+.official-footer-inner { width: min(1152px, 100%); margin: 0 auto; }
+.official-footer-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 29px; }
 .official-footer-grid section { display: grid; gap: 8px; }
-.official-footer-grid strong { font-weight: 400; }
+.official-footer-grid strong { margin-bottom: 8px; color: #fff; font-weight: 700; }
 .official-footer a { color: inherit; text-decoration: none; }
-.official-footer-meta { display: flex; justify-content: space-between; gap: 30px; margin-top: 35px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.2); }
+.official-footer-grid section a,
+.official-footer-grid section span { color: #ffc6ed; }
+.official-currency { grid-column: 6; display: inline-flex; align-self: end; justify-self: end; border: 1px solid #fff; }
+.official-currency button { border: 0; padding: 6px 8px; background: transparent; color: #fff; font-size: 14px; }
+.official-currency button[aria-pressed="true"] { background: #fff; color: #ea34b0; font-weight: 700; }
+.official-footer-meta { display: flex; justify-content: flex-end; gap: 29px; margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.25); }
 .preservation-notes {
   display: grid;
   grid-template-columns: 1.2fr 1fr .65fr;
@@ -211,8 +241,9 @@
   .official-pink-links { grid-template-columns: 1fr; }
   .card-grid { grid-template-columns: repeat(3, 1fr); }
   .compact-strip { grid-template-columns: repeat(10, 1fr); }
-  .official-footer-grid { grid-template-columns: 1fr 1fr; }
-  .official-footer-meta { flex-direction: column; }
+  .official-footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .official-currency { grid-column: 1; justify-self: start; }
+  .official-footer-meta { align-items: flex-end; flex-direction: column; gap: 5px; }
   .preservation-notes { grid-template-columns: 1fr; }
 }
 
@@ -449,7 +480,7 @@ button { cursor: pointer; }
 .market-status dt { font: 700 11px monospace; text-transform: uppercase; }
 .market-status dd { margin: 0; font-weight: 800; }
 .status-for-sale { color: var(--red); }
-.market-actions { display: flex; gap: 8px; }
+.market-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .pending-note { color: #777; font-size: 12px; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; }
 .section-heading > div > span { color: #666; font: 11px/1.5 monospace; }

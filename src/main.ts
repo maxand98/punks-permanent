@@ -51,12 +51,15 @@ const navigation = `
 
 const footer = `
   <footer class="official-footer">
-    <div class="official-footer-grid">
-      <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
-      <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
-      <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><span>Notifications</span></section>
+    <div class="official-footer-inner">
+      <div class="official-footer-grid">
+        <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
+        <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
+        <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><a href="/notifications" data-link>Notifications</a></section>
+        <div class="official-currency" role="group" aria-label="Price currency"><button type="button" aria-pressed="true">ETH</button><button type="button" aria-pressed="false">USD</button></div>
+      </div>
+      <div class="official-footer-meta"><a href="/cryptopunks/terms" data-link>Terms</a><a href="https://licenseterms.cryptopunks.app/">License Terms</a><a href="https://nodefoundation.com/privacy">Privacy Policy</a><span>ⓒ 2026 CryptoPunks</span></div>
     </div>
-    <div class="official-footer-meta"><span>◎ English</span><span><a href="/cryptopunks/terms" data-link>Terms</a> · <a href="https://licenseterms.cryptopunks.app/">License Terms</a> · <a href="https://nodefoundation.com/privacy">Privacy Policy</a> · © 2026 CryptoPunks</span></div>
   </footer>
   <aside class="preservation-notes" aria-labelledby="preservation-title">
     <div>
@@ -196,10 +199,14 @@ function renderStatus(record: PunkRecord) {
         </div>
       </dl>
       <div class="market-actions">
-        ${record.offer ? '<button type="button" data-wallet-required>Buy</button>' : ""}
-        <button type="button" data-wallet-required>Bid</button>
+        ${record.offer ? `<button type="button" data-market-action="buy" data-punk-id="${record.id}" data-owner="${record.owner}" data-offer-eth="${record.offer.priceEth}">Buy</button>` : ""}
+        <button type="button" data-market-action="bid" data-punk-id="${record.id}" data-owner="${record.owner}">Bid</button>
+        <button type="button" data-market-action="offer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Offer for Sale</button>
+        <button type="button" data-market-action="transfer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Transfer</button>
+        ${record.offer ? `<button type="button" data-market-action="cancel-offer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Remove from Sale</button>` : ""}
+        ${record.bid ? `<button type="button" data-market-action="accept-bid" data-punk-id="${record.id}" data-owner="${record.owner}" data-bidder="${record.bid.bidder}" data-bid-eth="${record.bid.priceEth}" hidden>Accept Bid</button><button type="button" data-market-action="withdraw-bid" data-punk-id="${record.id}" data-owner="${record.owner}" data-bidder="${record.bid.bidder}" data-bid-eth="${record.bid.priceEth}" hidden>Withdraw Bid</button>` : ""}
       </div>
-      <p class="pending-note">Connect a wallet to prepare a native-market transaction. Nothing is submitted without your confirmation.</p>
+      <p class="pending-note">Transactions are checked against the current CryptoPunksMarket state before your wallet opens. Nothing is submitted without your wallet confirmation.</p>
     </section>
   `;
 }
@@ -1170,4 +1177,5 @@ async function renderRoute() {
 }
 
 window.addEventListener("popstate", () => void renderRoute());
+window.addEventListener("punks:transaction-confirmed", () => void renderRoute());
 void renderRoute();
