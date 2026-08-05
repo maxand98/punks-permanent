@@ -24,6 +24,35 @@ const CONTENT_TYPES = new Map<string, string>([
   ["/llms-full.txt", "text/markdown; charset=utf-8"],
 ]);
 
+const AGENT_CARD = {
+  protocolVersion: "1.0",
+  name: "CryptoPunks Public Dataset Research Agent",
+  description: "Read-only research over the complete public CryptoPunks attributes snapshot and decoded event-history shards.",
+  version: "1.0.0",
+  url: "https://maxand98.com/a2a?tenant=cryptopunks",
+  preferredTransport: "JSONRPC",
+  supportedInterfaces: [{
+    url: "https://maxand98.com/a2a?tenant=cryptopunks",
+    protocolBinding: "JSONRPC",
+    protocolVersion: "1.0",
+    tenant: "cryptopunks",
+  }],
+  capabilities: { streaming: false, pushNotifications: false, extendedAgentCard: false },
+  defaultInputModes: ["text/plain"],
+  defaultOutputModes: ["text/plain"],
+  skills: [{
+    id: "research-punk",
+    name: "Research a CryptoPunk",
+    description: "Look up any Punk from 0 to 9999 in the public attributes snapshot and decoded history shard, returning traits, recent events, and source URLs.",
+    tags: ["CryptoPunks", "traits", "history", "onchain-data"],
+    examples: ["Research Punk 7804", "Show the traits and recent history for Punk 0"],
+    inputModes: ["text/plain"],
+    outputModes: ["text/plain"],
+  }],
+  securitySchemes: {},
+  security: [],
+};
+
 function acceptsMarkdown(request: Request) {
   const accept = request.headers.get("accept")?.toLowerCase() ?? "";
   return accept.includes("text/markdown") || accept.includes("text/x-markdown");
@@ -44,6 +73,14 @@ function withDiscovery(response: Response, contentType?: string) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === "/.well-known/agent-card.json") {
+      return withDiscovery(Response.json(AGENT_CARD, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=300",
+        },
+      }), "application/json; charset=utf-8");
+    }
     let assetPath = url.pathname;
     if (url.pathname === "/index.md" || (url.pathname === "/" && acceptsMarkdown(request))) {
       assetPath = "/llms.txt";
