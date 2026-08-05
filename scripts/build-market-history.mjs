@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { decodeEventLog, parseAbi } from "viem";
+import { decodeEventLog, getAddress, parseAbi } from "viem";
 
 const CONTRACT = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
 const DEPLOYMENT_BLOCK = 3_914_495;
@@ -28,6 +28,8 @@ const relevantTopics = new Set([
   "0x6f30e1ee4d81dcc7a8a478577f65d2ed2edb120565960ac45fe7c50551c87932",
   "0xb0e0a660b4e50f26f0b7ce75c24655fc76cc66e3334a54ff410277229fa10bd4",
 ]);
+const LEGACY_TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 await mkdir(CACHE, { recursive: true });
 await mkdir(OUTPUT, { recursive: true });
@@ -149,6 +151,21 @@ await Promise.all(Array.from({ length: WORKERS }, () => worker()));
 
 const histories = Array.from({ length: 10_000 }, () => []);
 let decodedCount = 0;
+let correctedBuyerCount = 0;
+const legacyTransfersByTransaction = new Map();
+
+for (const log of rawLogs) {
+  if (log.topics?.[0]?.toLowerCase() !== LEGACY_TRANSFER_TOPIC) continue;
+  const transfer = {
+    from: getAddress(`0x${log.topics[1].slice(-40)}`),
+    to: getAddress(`0x${log.topics[2].slice(-40)}`),
+    logIndex: Number(BigInt(log.logIndex)),
+  };
+  const transfers =
+    legacyTransfersByTransaction.get(log.transactionHash) ?? [];
+  transfers.push(transfer);
+  legacyTransfersByTransaction.set(log.transactionHash, transfers);
+}
 
 for (const log of rawLogs) {
   const topic = log.topics?.[0]?.toLowerCase();
@@ -199,14 +216,37 @@ for (const log of rawLogs) {
       };
       break;
     case "PunkBought":
+      {
+        const reportedTo = args.toAddress;
+        const matchingTransfer = (
+          legacyTransfersByTransaction.get(log.transactionHash) ?? []
+        )
+          .filter(
+            (transfer) =>
+              transfer.from.toLowerCase() ===
+                args.fromAddress.toLowerCase() &&
+              transfer.logIndex < common.logIndex,
+          )
+          .sort((a, b) => b.logIndex - a.logIndex)[0];
+        const correctedTo =
+          reportedTo ===
+            "0x0000000000000000000000000000000000000000" &&
+          matchingTransfer
+            ? matchingTransfer.to
+            : reportedTo;
+        if (correctedTo !== reportedTo) correctedBuyerCount += 1;
       event = {
         ...common,
         type: "bought",
         valueWei: args.value.toString(),
         from: args.fromAddress,
-        to: args.toAddress,
+        to: correctedTo,
+        ...(correctedTo !== reportedTo
+          ? { reportedTo: reportedTo, toDerivedFromLegacyTransfer: true }
+          : {}),
       };
       break;
+      }
     case "PunkNoLongerForSale":
       event = { ...common, type: "offer-withdrawn" };
       break;
@@ -262,6 +302,11 @@ const manifest = {
     snapshotBlock,
     retrieval: "Ethereum logs via Blockscout API v1; independently reproducible from any archive node",
     eventNames: abi.filter((item) => item.type === "event").map((item) => item.name),
+    eventCorrections: {
+      zeroAddressPunkBoughtRecipients:
+        "Corrected by matching the immediately preceding legacy Transfer(from,to,1) event in the same transaction.",
+      correctedEvents: correctedBuyerCount,
+    },
   },
   totals: {
     rawLogs: rawLogs.length,

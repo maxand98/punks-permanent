@@ -19,6 +19,12 @@ const DEFAULT_RPCS = [
   "https://cloudflare-eth.com",
 ];
 
+const LOG_RPCS = [
+  "https://ethereum-rpc.publicnode.com",
+  "https://eth.llamarpc.com",
+  "https://1rpc.io/eth",
+];
+
 export type PunkRecord = {
   id: number;
   svg: string;
@@ -33,12 +39,23 @@ function configuredRpcs() {
   return custom ? [custom, ...DEFAULT_RPCS] : DEFAULT_RPCS;
 }
 
-function client() {
+export function getEthereumClient() {
   return createPublicClient({
     chain: mainnet,
     transport: fallback(
       configuredRpcs().map((url) => http(url, { timeout: 8_000 })),
       { rank: true },
+    ),
+  });
+}
+
+export function getEthereumLogClient() {
+  const custom = localStorage.getItem("punks-permanent-rpc")?.trim();
+  const urls = custom ? [custom, ...LOG_RPCS] : LOG_RPCS;
+  return createPublicClient({
+    chain: mainnet,
+    transport: fallback(
+      urls.map((url) => http(url, { timeout: 12_000 })),
     ),
   });
 }
@@ -65,7 +82,7 @@ export async function loadPunk(id: number): Promise<PunkRecord> {
     throw new Error("Punk number must be from 0 to 9999.");
   }
 
-  const publicClient = client();
+  const publicClient = getEthereumClient();
   const punkId = BigInt(id);
   const [svg, attributes, owner, offer, bid] = await Promise.all([
     publicClient.readContract({

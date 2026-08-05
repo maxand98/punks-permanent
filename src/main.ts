@@ -12,15 +12,28 @@ import {
   svgDataUrl,
   type PunkRecord,
 } from "./ethereum";
-import { formatEther } from "viem";
+import { formatEther, getAddress, isAddress } from "viem";
 import {
   loadPunkHistory,
   type HistoryManifest,
   type MarketEvent,
 } from "./history";
+import {
+  loadMarketState,
+  loadMarketViews,
+  syncMarketState,
+  type GlobalMarketEvent,
+  type MarketSync,
+} from "./market";
+import { applicationPathname, contentUrl } from "./paths";
+import { bindWalletDrawer } from "./wallet";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
+document.documentElement.style.setProperty(
+  "--punks-composite-url",
+  `url("${contentUrl("assets/punks.png")}")`,
+);
 
 const navigation = `
   <div class="site-chrome">
@@ -28,45 +41,52 @@ const navigation = `
       <strong>NOT OFFICIAL CRYPTOPUNKS SITE: RESEARCH PROJECT ONLY</strong>
       <a href="https://cryptopunks.app/" rel="external">Official site is cryptopunks.app <span aria-hidden="true">↗</span></a>
     </aside>
-    <header class="site-header">
-      <a class="brand" href="/" data-link>CryptoPunks</a>
-      <nav aria-label="Primary navigation">
-        <a href="https://hub.cryptopunks.app/">Brand Hub</a>
-        <a href="/cryptopunks" data-link>All CryptoPunks</a>
-        <a href="/cryptopunks/owners" data-link>Owners</a>
-        <details>
-          <summary>Types and Attributes</summary>
-          <div>
-            <a href="/cryptopunks/types" data-link>Punk Types</a>
-            <a href="/cryptopunks/attributes" data-link>Attributes</a>
-            <a href="/cryptopunks/attribute-counts" data-link>Attribute Counts</a>
-          </div>
-        </details>
-        <details>
-          <summary>Sales</summary>
-          <div>
-            <a href="/cryptopunks/largest-sales" data-link>Largest Sales</a>
-            <a href="/cryptopunks/transactions" data-link>Recent Transactions</a>
-            <a href="/cryptopunks/bids" data-link>Bids</a>
-          </div>
-        </details>
-      </nav>
-      <button class="wallet-button" type="button" disabled title="Wallet actions are the next parity phase">Connect Wallet</button>
-    </header>
   </div>
+  <header class="site-header">
+    <a class="brand" href="/" data-link aria-label="CryptoPunks homepage">
+      <img src="${contentUrl("assets/CryptoPunks_Logo_Pink.png")}" alt="CryptoPunks Logo">
+    </a>
+  </header>
+  <aside class="wallet-drawer is-collapsed" data-wallet-drawer aria-label="Ethereum wallet">
+    <button class="wallet-tab" type="button" data-wallet-tab>Connect Wallet</button>
+    <section class="wallet-panel" data-wallet-panel>
+      <button class="wallet-collapse" type="button" data-wallet-collapse aria-label="Collapse wallet panel">›</button>
+    </section>
+  </aside>
 `;
 
 const footer = `
-  <footer>
-    <div>
-      <strong>CryptoPunks</strong>
-      <p>An independent, unofficial interface reading the canonical Ethereum contracts.</p>
-    </div>
-    <div>
-      <a href="https://github.com/maxand98/punks-permanent">Source code ↗</a>
-      <a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal ↗</a>
+  <footer class="official-footer">
+    <div class="official-footer-inner">
+      <div class="official-footer-grid">
+        <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
+        <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
+        <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><a href="/notifications" data-link>Notifications</a></section>
+        <div class="official-currency" role="group" aria-label="Price currency"><button type="button" aria-pressed="true">ETH</button><button type="button" aria-pressed="false">USD</button></div>
+      </div>
+      <div class="official-footer-meta">
+        <button class="official-language" type="button" aria-label="Select Language"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><path d="M2 10h16M10 2c2.2 2.2 3.3 4.9 3.3 8S12.2 15.8 10 18M10 2C7.8 4.2 6.7 6.9 6.7 10s1.1 5.8 3.3 8"></path></svg><span>English</span></button>
+        <div class="official-legal"><a href="/cryptopunks/terms" data-link>Terms</a><a href="https://licenseterms.cryptopunks.app/">License Terms</a><a href="https://nodefoundation.com/privacy">Privacy Policy</a><span>ⓒ 2026 CryptoPunks</span></div>
+      </div>
     </div>
   </footer>
+  <aside class="preservation-notes" aria-labelledby="preservation-title">
+    <div>
+      <p class="preservation-label">TL;DR</p>
+      <h2 id="preservation-title">A preservation client, not another indispensable server.</h2>
+      <p>CryptoPunks.website packages a reproducible interface on IPFS and reads ownership, bids, offers, sales and artwork from Ethereum. It is independent and unofficial, and it does not yet reproduce every service offered by CryptoPunks.app.</p>
+    </div>
+    <div class="preservation-differences">
+      <p class="preservation-label">Technical differences</p>
+      <ul>
+        <li><strong>Hosting:</strong> a static, content-addressed release replaces a required application origin.</li>
+        <li><strong>Live data:</strong> verified checkpoints load immediately, then the browser synchronises from any configured Ethereum RPC.</li>
+        <li><strong>Wallet:</strong> native market calls are simulated and sent through an injected Ethereum wallet; WalletConnect is not yet included.</li>
+        <li><strong>Remaining gaps:</strong> notifications, translations, USD conversion, ENS display and several secondary routes are still being rebuilt.</li>
+      </ul>
+    </div>
+    <div class="preservation-links"><a href="https://github.com/maxand98/punks-permanent">Source code</a><a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal</a><a href="https://github.com/maxand98/punks-permanent/blob/main/docs/REPLICATION.md">Replication guide</a><form id="rpc-form"><label for="rpc-url">Ethereum RPC URL</label><input id="rpc-url" type="url" placeholder="http://localhost:8545"><button type="submit">Use this node</button><button type="button" id="clear-rpc">Use fallbacks</button><small id="rpc-summary"></small></form></div>
+  </aside>
 `;
 
 function shortAddress(address: string) {
@@ -108,14 +128,29 @@ function searchForm(value = "") {
   `;
 }
 
+function homepagePunkTiles(ids: number[], className = "") {
+  return `<div class="homepage-punk-tiles ${className}">${ids
+    .map(
+      (id) =>
+        `<a href="${punkRoute(id)}" data-link aria-label="CryptoPunk #${id}">${punkThumbnail(id)}</a>`,
+    )
+    .join("")}</div>`;
+}
+
 function bindNavigation() {
   document.querySelectorAll<HTMLAnchorElement>("[data-link]").forEach((link) => {
     if (link.dataset.bound === "true") return;
+    const rawHref = link.getAttribute("href") ?? "/";
+    const route = link.dataset.route ?? rawHref;
+    if (route.startsWith("/")) {
+      link.dataset.route = route;
+      link.href = contentUrl(route);
+    }
     link.dataset.bound = "true";
     link.addEventListener("click", (event) => {
       if (link.origin !== location.origin) return;
       event.preventDefault();
-      history.pushState(null, "", link.pathname + link.search);
+      history.pushState(null, "", contentUrl(link.dataset.route ?? "/"));
       void renderRoute();
     });
   });
@@ -131,12 +166,12 @@ function bindNavigation() {
         const query = input?.value.trim() ?? "";
         const id = Number(query);
         if (/^\d+$/.test(query) && Number.isInteger(id) && id >= 0 && id <= 9999) {
-          history.pushState(null, "", punkRoute(id));
+          history.pushState(null, "", contentUrl(punkRoute(id)));
         } else if (query) {
           history.pushState(
             null,
             "",
-            `/cryptopunks/search?query=${encodeURIComponent(query)}`,
+            contentUrl(`/cryptopunks/search?query=${encodeURIComponent(query)}`),
           );
         } else {
           return;
@@ -144,6 +179,8 @@ function bindNavigation() {
         void renderRoute();
       });
     });
+  bindRpcSettings();
+  bindWalletDrawer();
 }
 
 function renderStatus(record: PunkRecord) {
@@ -174,10 +211,14 @@ function renderStatus(record: PunkRecord) {
         </div>
       </dl>
       <div class="market-actions">
-        ${record.offer ? '<button type="button" disabled>Buy</button>' : ""}
-        <button type="button" disabled>Bid</button>
+        ${record.offer ? `<button type="button" data-market-action="buy" data-punk-id="${record.id}" data-owner="${record.owner}" data-offer-eth="${record.offer.priceEth}">Buy</button>` : ""}
+        <button type="button" data-market-action="bid" data-punk-id="${record.id}" data-owner="${record.owner}">Bid</button>
+        <button type="button" data-market-action="offer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Offer for Sale</button>
+        <button type="button" data-market-action="transfer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Transfer</button>
+        ${record.offer ? `<button type="button" data-market-action="cancel-offer" data-punk-id="${record.id}" data-owner="${record.owner}" hidden>Remove from Sale</button>` : ""}
+        ${record.bid ? `<button type="button" data-market-action="accept-bid" data-punk-id="${record.id}" data-owner="${record.owner}" data-bidder="${record.bid.bidder}" data-bid-eth="${record.bid.priceEth}" hidden>Accept Bid</button><button type="button" data-market-action="withdraw-bid" data-punk-id="${record.id}" data-owner="${record.owner}" data-bidder="${record.bid.bidder}" data-bid-eth="${record.bid.priceEth}" hidden>Withdraw Bid</button>` : ""}
       </div>
-      <p class="pending-note">Wallet transactions are disabled in this read-only parity milestone.</p>
+      <p class="pending-note">Transactions are checked against the current CryptoPunksMarket state before your wallet opens. Nothing is submitted without your wallet confirmation.</p>
     </section>
   `;
 }
@@ -304,7 +345,7 @@ function renderHistory(
         <tbody id="history-rows">${historyRows(events, false)}</tbody>
       </table>
     </div>
-    <p class="history-source">Reconstructed from CryptoPunksMarket events. Snapshot SHA-256 values are published in the <a href="/data/history-manifest.json">release manifest</a>.</p>
+    <p class="history-source">Reconstructed from CryptoPunksMarket events. Snapshot SHA-256 values are published in the <a href="${contentUrl("data/history-manifest.json")}">release manifest</a>.</p>
   `;
 }
 
@@ -422,54 +463,42 @@ async function renderPunkDetail(id: number) {
 
 function renderHomepage() {
   document.title = "CryptoPunks";
+  const displayPunks = [2403, 5917, 3797, 5098, 9419, 7897, 8809, 9228, 5931, 471, 2131, 6573, 1707, 9335, 3190, 2346, 4255, 1859, 9060, 6570, 1895, 8272, 5745, 6096, 2480, 9584, 3549, 4898];
+  const salePunks = [5822, 7804, 3100, 635, 2924, 4156, 5577, 4464, 8881, 4945, 5975, 4777];
   app.innerHTML = `
     ${navigation}
-    <main>
-      <section class="home-hero">
-        <div>
-          <p class="kicker">10,000 unique collectible characters</p>
-          <h1>CryptoPunks</h1>
-          <p>Proof of ownership, artwork and the zero-fee native market live on Ethereum. This independent interface is being rebuilt for long-term survival.</p>
-          ${searchForm("7804")}
-        </div>
-        <div class="sample-punk" id="sample-punk"><span>Reading Punk #7804 from Ethereum…</span></div>
+    <main class="official-home">
+      <section class="official-intro">
+        <p>10,000 unique, 24×24 pixel portraits inspired by the London 80s punk scene and the 90s cyberpunk culture.</p>
+        <p>Launched onchain in 2017 by artists Matt Hall and John Watkinson (collectively known as <a href="https://www.larvalabs.com/">Larva Labs</a>), CryptoPunks were conceived to feel as tangible and ownable as physical collectibles while existing entirely in digital space. First released on June 23, 2017, they were among the earliest artworks to exist as non-fungible tokens on Ethereum, sometimes called the “world computer.”</p>
+        <p>Initially offered “free to claim” by anyone with an Ethereum wallet, the project was revolutionary: a large-scale generative artwork, a radical new model for digital ownership, and a built-in marketplace for exchange. Anyone could claim a Punk by paying only the network fee. The project's simplicity masked its sophistication, within the constraint of 24×24 pixels lies a system of endless variation.</p>
       </section>
-      <section class="parity-status">
-        <p class="kicker">Parity programme</p>
-        <h2>The complete website, without an indispensable server.</h2>
-        <div>
-          <article><strong>10,000</strong><span>attribute records read from CryptoPunksData</span></article>
-          <article><strong>2</strong><span>canonical contracts in the essential read path</span></article>
-          <article><strong>0</strong><span>official APIs required for this milestone</span></article>
-        </div>
-        <a href="/cryptopunks/details/7804" data-link>Open the first parity-complete route →</a>
+      ${homepagePunkTiles(displayPunks, "intro-strip")}
+      <section class="official-copy">
+        <p>Each Punk is algorithmically generated from 87 distinct attributes (hairstyles, accessories, and facial details) distributed across five archetypal types: 6,039 male humans, 3,840 female humans, 88 green zombies, 24 brown apes, and 9 ultra-rare blue aliens. The system forms a typology, a way to classify identity into recognizable categories. No two are the same.</p>
+        <p>Unlike traditional portraits that are commissioned to capture how you look, CryptoPunks invert the process. You adopt a pre-existing avatar that signals how you want to be seen online. In this way, CryptoPunks are the defining portraits for the internet age, permanently inscribed on the blockchain and living on as networked art.</p>
+        <p>Today, they trade in their own native marketplace; every bid, offer, and sale is visible and instantaneous. <mark class="status-blue">Blue</mark> means not for sale. <mark class="status-red">Red</mark> means listed for sale by their owner. <mark class="status-purple">Purple</mark> means there is an active bid on Punk. The system is simple, transparent, and verifiable.</p>
+        <p>See the <a href="#marketplace">marketplace instructions</a> below to acquire your very own Punk. You can also follow along on <a href="https://x.com/cryptopunks">X</a> and <a href="https://www.instagram.com/cryptopunksofficial/">IG</a> or join the community-run <a href="https://discord.gg/tQp4pSE">Discord</a>.</p>
       </section>
-      <section class="rpc-settings">
-        <div>
-          <p class="kicker">Your doorway, your node</p>
-          <h2>Choose the Ethereum connection.</h2>
-        </div>
-        <form id="rpc-form">
-          <label for="rpc-url">Custom RPC URL</label>
-          <input id="rpc-url" type="url" placeholder="http://localhost:8545">
-          <button type="submit">Save endpoint</button>
-          <button type="button" id="clear-rpc">Use fallbacks</button>
-          <small id="rpc-summary"></small>
-        </form>
+      <div class="homepage-composite" role="img" aria-label="The complete canonical CryptoPunks composite"></div>
+      <section class="official-section stats-section" id="homepage-live-stats">
+        <h2>Overall Stats</h2>
+        <div class="official-stat-grid"><p><span>Current Lowest Price Punk Available</span><strong>Live Ethereum market</strong></p><p><span>Number of Sales (Last 12 Months)</span><strong>Onchain history</strong></p><p><span>Total Value of All Sales (Lifetime)</span><strong>Onchain history</strong></p><p><span>Value of Sales (24 Hours)</span><strong>Onchain history</strong></p><p><span>Value of Sales (Week)</span><strong>Onchain history</strong></p><p><span>Value of Sales (4 Weeks)</span><strong>Onchain history</strong></p></div>
+        <div class="official-pink-links"><a href="/cryptopunks/leaderboard" data-link>☷ Top Punk Owners</a><a href="/cryptopunks/attributes" data-link>♧ All Punk Types and Attributes</a></div>
       </section>
+      <section class="official-section"><h2>Largest Sales</h2><a class="section-link" href="/cryptopunks/topsales" data-link>See all top sales</a>${homepagePunkTiles(salePunks, "card-grid")}</section>
+      <section class="official-section"><h2>Recent Transactions</h2><p>Ethereum transaction history, reconstructed from canonical contract events. <a href="/cryptopunks/recents" data-link>Click here to see all recent transactions.</a></p>${homepagePunkTiles(displayPunks.slice(0, 12), "card-grid transactions-grid")}</section>
+      <section class="official-section"><h2>For Sale</h2><p>Offers are read from the native CryptoPunksMarket contract. <a href="/cryptopunks/forSale" data-link>Click here to see all Punks for sale.</a></p>${homepagePunkTiles(displayPunks.slice(12, 26), "compact-strip status-red-bg")}</section>
+      <section class="official-section"><h2>Bids</h2><p>Current bids are read directly from Ethereum. <a href="/cryptopunks/bids" data-link>Click here to see all bids.</a></p>${homepagePunkTiles([2403, 5917, 3797, 5098, 9419], "compact-strip status-purple-bg")}</section>
+      <section class="official-section"><h2>Sales</h2><p>Every completed native-market sale remains verifiable onchain. <a href="/cryptopunks/sales" data-link>Click here to see all sales.</a></p>${homepagePunkTiles(displayPunks.slice().reverse().slice(0, 20), "compact-strip")}</section>
+      <section class="official-section"><h2>All CryptoPunks</h2><p>See all <a href="/cryptopunks/all" data-link>CryptoPunks here.</a></p>${homepagePunkTiles(displayPunks.slice(0, 20), "compact-strip")}</section>
+      <section class="official-section"><h2>Wrapped CryptoPunks</h2><p>Wrapped Punks can trade on ERC-721 marketplaces. <a href="/cryptopunks/wrapped" data-link>Click here to see all wrapped Punks.</a></p>${homepagePunkTiles(displayPunks.slice(5, 25), "compact-strip status-wrapped-bg")}</section>
+      <section class="official-section faq-section"><h2>Q&amp;A</h2><details><summary>What is a CryptoPunk?</summary><p>One of 10,000 unique 24×24 pixel portraits created in 2017.</p></details><details><summary>What exactly is going on here?</summary><p>This interface reads the canonical Ethereum contracts and reproducible snapshots without an official API.</p></details><details><summary>How do I get a Punk?</summary><p>Connect an Ethereum wallet on a Punk detail page to bid or buy through the zero-fee native CryptoPunks market.</p></details><details><summary>Where are the images for the Punks stored?</summary><p>The composite and image hash are recorded by the CryptoPunksData contract; this mirror also packages the verified composite.</p></details><details><summary>Are the Punks an ERC-721 token?</summary><p>The original CryptoPunks contract predates ERC-721. Wrapped Punks provide an ERC-721 representation.</p></details><details><summary>Where does the market data on this site come from?</summary><p>Ethereum event logs and current CryptoPunksMarket contract reads.</p></details><details><summary>Do you charge any fees for transactions?</summary><p>No. The native CryptoPunks market has no platform fee.</p></details><p class="inquiries">For inquiries, email <a href="mailto:punks@nodefoundation.com">punks@nodefoundation.com</a></p></section>
+      <section class="official-section search-section"><h2>Search Punks</h2>${searchForm()}</section>
     </main>
     ${footer}
   `;
   bindNavigation();
-  bindRpcSettings();
-
-  void loadPunk(7804).then((record) => {
-    const sample = document.querySelector<HTMLDivElement>("#sample-punk");
-    if (sample) {
-      sample.innerHTML = `<a href="${punkRoute(7804)}" data-link><img src="${svgDataUrl(record.svg)}" alt="CryptoPunk #7804"><span>Punk #7804 · Onchain SVG</span></a>`;
-      bindNavigation();
-    }
-  });
 }
 
 async function renderAllPunks() {
@@ -495,7 +524,7 @@ async function renderAllPunks() {
           <output id="map-selection">Move across the map to identify a Punk.</output>
         </div>
         <button class="punk-map" id="punk-map" type="button" aria-label="Interactive map of all 10,000 CryptoPunks">
-          <img src="/assets/punks.png" alt="All 10,000 CryptoPunks in their canonical 100 by 100 arrangement">
+          <img src="${contentUrl("assets/punks.png")}" alt="All 10,000 CryptoPunks in their canonical 100 by 100 arrangement">
           <span class="map-cursor" id="map-cursor" hidden></span>
         </button>
         <p class="map-provenance">Composite SHA-256 <code>ac39af4793119ee46bbff351d8cb6b5f23da60222126add4268e261199a2921b</code>, matching the hash embedded in CryptoPunksMarket.</p>
@@ -537,7 +566,7 @@ async function renderAllPunks() {
   });
   map?.addEventListener("click", (event) => {
     const id = locate(event);
-    history.pushState(null, "", punkRoute(id));
+    history.pushState(null, "", contentUrl(punkRoute(id)));
     void renderRoute();
   });
 
@@ -566,6 +595,422 @@ function punkThumbnail(id: number) {
   const column = id % 100;
   const row = Math.floor(id / 100);
   return `<span class="punk-thumbnail" style="--punk-x:${(column / 99) * 100}%;--punk-y:${(row / 99) * 100}%"></span>`;
+}
+
+type MarketResult = MarketSync & { error?: string };
+
+async function loadCurrentMarket(): Promise<MarketResult> {
+  try {
+    return await syncMarketState();
+  } catch (error) {
+    const state = await loadMarketState();
+    return {
+      state,
+      checkpointBlock: Number(state.source.blockNumber),
+      latestBlock: Number(state.source.blockNumber),
+      synced: false,
+      newEvents: [],
+      error:
+        error instanceof Error ? error.message : "Ethereum sync unavailable.",
+    };
+  }
+}
+
+function formatEth(valueWei: string, maximumFractionDigits = 4) {
+  return Number(formatEther(BigInt(valueWei))).toLocaleString("en", {
+    maximumFractionDigits,
+  });
+}
+
+function eventDate(timestamp: number) {
+  return new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(timestamp * 1000));
+}
+
+function syncNotice(market: MarketResult) {
+  if (market.synced) {
+    return `
+      <div class="sync-notice sync-live">
+        <strong>Live Ethereum state</strong>
+        <span>Checkpoint ${market.checkpointBlock.toLocaleString()} synchronised through block ${market.latestBlock.toLocaleString()}.</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="sync-notice sync-checkpoint">
+      <strong>Checkpoint view — not live</strong>
+      <span>Showing block ${market.checkpointBlock.toLocaleString()}. Connect a working Ethereum RPC to synchronise newer events. ${escapeHtml(market.error ?? "")}</span>
+    </div>
+  `;
+}
+
+function routePagination(
+  route: string,
+  page: number,
+  pages: number,
+  parameters = new URLSearchParams(),
+) {
+  const href = (target: number) => {
+    const next = new URLSearchParams(parameters);
+    next.set("page", String(target));
+    return `${route}?${next}`;
+  };
+  if (pages <= 1) return "";
+  return `
+    <nav class="result-pagination" aria-label="Result pages">
+      ${page > 0 ? `<a href="${href(page - 1)}" data-link>← Previous</a>` : "<span></span>"}
+      <span>Page ${page + 1} of ${pages}</span>
+      ${page + 1 < pages ? `<a href="${href(page + 1)}" data-link>Next →</a>` : "<span></span>"}
+    </nav>
+  `;
+}
+
+function marketPageHeader(kicker: string, title: string, description: string) {
+  return `
+    <header class="market-page-header">
+      <p class="kicker">${kicker}</p>
+      <h1>${title}</h1>
+      <p>${description}</p>
+    </header>
+  `;
+}
+
+function globalEventRows(events: GlobalMarketEvent[]) {
+  return events
+    .map(
+      (event) => `
+        <tr>
+          <td>
+            <a class="market-punk" href="${punkRoute(event.punk)}" data-link>
+              ${punkThumbnail(event.punk)}
+              <strong>#${event.punk}</strong>
+            </a>
+          </td>
+          <td><span class="event-type event-${event.type}">${historyLabel(event.type)}</span></td>
+          <td>${historyAddress(event.from)}</td>
+          <td>${historyAddress(event.to ?? event.onlyTo)}</td>
+          <td class="history-amount">${event.valueWei ? `${formatEth(event.valueWei, 6)} ETH` : ""}</td>
+          <td><a href="https://etherscan.io/tx/${event.transactionHash}" title="Block ${event.block.toLocaleString()}">${eventDate(event.timestamp)} ↗</a></td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
+function mergeEvents(
+  baseline: GlobalMarketEvent[],
+  tail: GlobalMarketEvent[],
+) {
+  const byPosition = new Map<string, GlobalMarketEvent>();
+  for (const event of [...baseline, ...tail]) {
+    byPosition.set(
+      `${event.transactionHash}:${event.logIndex}:${event.type}`,
+      event,
+    );
+  }
+  return [...byPosition.values()].sort(
+    (a, b) =>
+      b.block - a.block ||
+      b.transactionIndex - a.transactionIndex ||
+      b.logIndex - a.logIndex,
+  );
+}
+
+async function renderOwners() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 100;
+  document.title = "CryptoPunks Owners - CryptoPunks";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Ethereum ownership",
+        "Top CryptoPunk Owners",
+        "Ranked from canonical CryptoPunksMarket ownership, beginning with a reproducible checkpoint and synchronised in this browser.",
+      )}
+      <div id="market-route"><p>Synchronising ownership with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const market = await loadCurrentMarket();
+  const start = page * perPage;
+  const visible = market.state.owners.slice(start, start + perPage);
+  const pages = Math.ceil(market.state.owners.length / perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${market.state.totals.owners.toLocaleString()}</strong><span>Owners</span></article>
+      <article><strong>10,000</strong><span>Punks</span></article>
+      <article><strong>${market.state.totals.publicOffers.toLocaleString()}</strong><span>Publicly offered</span></article>
+    </div>
+    <div class="market-table-wrap">
+      <table class="market-table owners-table">
+        <thead><tr><th>Rank</th><th>Owner</th><th>Punks</th><th>Sample holdings</th></tr></thead>
+        <tbody>
+          ${visible
+            .map(
+              (owner, index) => `
+                <tr>
+                  <td>${(start + index + 1).toLocaleString()}</td>
+                  <td><a href="/cryptopunks/accountinfo?account=${owner.address}" data-link>${shortAddress(owner.address)}</a></td>
+                  <td><strong>${owner.count.toLocaleString()}</strong></td>
+                  <td>
+                    <div class="owner-samples">
+                      ${owner.punks
+                        .slice(0, 8)
+                        .map(
+                          (id) =>
+                            `<a href="${punkRoute(id)}" title="Punk #${id}" data-link>${punkThumbnail(id)}</a>`,
+                        )
+                        .join("")}
+                    </div>
+                  </td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/owners", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderAccountInfo() {
+  const value =
+    new URLSearchParams(location.search).get("account")?.trim() ?? "";
+  if (!isAddress(value)) {
+    renderNotFound("Enter a valid Ethereum address to view its CryptoPunks.");
+    return;
+  }
+  const address = getAddress(value);
+  document.title = `${shortAddress(address)} - CryptoPunks Owner`;
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Owner account",
+        shortAddress(address),
+        "Current CryptoPunks held by this Ethereum address.",
+      )}
+      <div id="market-route"><p>Synchronising this account with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const market = await loadCurrentMarket();
+  const owner = market.state.owners.find(
+    (entry) => entry.address.toLowerCase() === address.toLowerCase(),
+  );
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  const punks = owner?.punks ?? [];
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="account-heading">
+      <div><strong>${punks.length.toLocaleString()}</strong><span>CryptoPunks owned</span></div>
+      <a href="${etherscan(address)}">${address} ↗</a>
+    </div>
+    ${
+      punks.length
+        ? `<div class="punk-results account-punks">
+            ${punks
+              .map(
+                (id) => `
+                  <a href="${punkRoute(id)}" data-link>
+                    ${punkThumbnail(id)}
+                    <strong>#${id}</strong>
+                    <span>${market.state.punks[id].offer ? `${formatEth(market.state.punks[id].offer!.valueWei)} ETH offer` : "Not offered for sale"}</span>
+                  </a>
+                `,
+              )
+              .join("")}
+          </div>`
+        : '<div class="no-results"><h2>No CryptoPunks held.</h2><p>This address owns no Punks at the displayed Ethereum block.</p></div>'
+    }
+  `;
+  bindNavigation();
+}
+
+async function renderLargestSales() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 50;
+  document.title = "Largest CryptoPunks Sales";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Native market history",
+        "Largest Sales",
+        "Paid PunkBought events ranked by their onchain ETH value. No hosted marketplace API is used.",
+      )}
+      <div id="market-route"><p>Loading and synchronising market history…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const paidTail = market.newEvents.filter(
+    (event) => event.type === "bought" && BigInt(event.valueWei ?? 0) > 0n,
+  );
+  const sales = mergeEvents(views.largestSales, paidTail).sort((a, b) => {
+    const difference = BigInt(b.valueWei ?? 0) - BigInt(a.valueWei ?? 0);
+    return difference === 0n ? b.block - a.block : difference > 0n ? 1 : -1;
+  });
+  const pages = Math.ceil(sales.length / perPage);
+  const visible = sales.slice(page * perPage, (page + 1) * perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${views.totals.paidSales.toLocaleString()}</strong><span>Paid sales recorded</span></article>
+      <article><strong>${formatEth(views.sales.allTime.volumeWei, 0)}</strong><span>ETH all-time volume</span></article>
+      <article><strong>${formatEth(views.sales.lastYear.averageWei, 2)}</strong><span>Average ETH · last year</span></article>
+    </div>
+    <div class="market-table-wrap">
+      <table class="market-table">
+        <thead><tr><th>Punk</th><th>Event</th><th>From</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>${globalEventRows(visible)}</tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/largest-sales", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderTransactions() {
+  const page = Math.max(
+    0,
+    Number(new URLSearchParams(location.search).get("page") ?? 0) || 0,
+  );
+  const perPage = 50;
+  document.title = "Recent CryptoPunks Transactions";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Ethereum event stream",
+        "Recent Transactions",
+        "Offers, bids, transfers and sales decoded directly from CryptoPunksMarket logs.",
+      )}
+      <div id="market-route"><p>Synchronising recent transactions…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const events = mergeEvents(views.recentTransactions, market.newEvents);
+  const pages = Math.ceil(events.length / perPage);
+  const visible = events.slice(page * perPage, (page + 1) * perPage);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-table-wrap">
+      <table class="market-table">
+        <thead><tr><th>Punk</th><th>Event</th><th>From</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>${globalEventRows(visible)}</tbody>
+      </table>
+    </div>
+    ${routePagination("/cryptopunks/transactions", page, pages)}
+  `;
+  bindNavigation();
+}
+
+async function renderBids() {
+  document.title = "CryptoPunks Bids";
+  app.innerHTML = `
+    ${navigation}
+    <main class="market-page">
+      ${marketPageHeader(
+        "Native bids",
+        "CryptoPunk Bids",
+        "Open bids from current contract state, followed by the recent onchain bid history.",
+      )}
+      <div id="market-route"><p>Synchronising bids with Ethereum…</p></div>
+    </main>
+    ${footer}
+  `;
+  bindNavigation();
+  const [market, views] = await Promise.all([
+    loadCurrentMarket(),
+    loadMarketViews(),
+  ]);
+  const open = market.state.punks
+    .map((punk, id) => ({ id, bid: punk.bid }))
+    .filter(
+      (entry): entry is { id: number; bid: NonNullable<typeof entry.bid> } =>
+        Boolean(entry.bid),
+    )
+    .sort((a, b) => {
+      const difference = BigInt(b.bid.valueWei) - BigInt(a.bid.valueWei);
+      return difference > 0n ? 1 : difference < 0n ? -1 : a.id - b.id;
+    });
+  const recent = mergeEvents(
+    views.recentBids,
+    market.newEvents.filter((event) => event.type === "bid"),
+  ).slice(0, 100);
+  const route = document.querySelector<HTMLElement>("#market-route");
+  if (!route) return;
+  route.innerHTML = `
+    ${syncNotice(market)}
+    <div class="market-stat-grid">
+      <article><strong>${open.length.toLocaleString()}</strong><span>Open bids</span></article>
+      <article><strong>${market.state.totals.publicOffers.toLocaleString()}</strong><span>Public offers</span></article>
+      <article><strong>${views.totals.bids.toLocaleString()}</strong><span>Historical bids</span></article>
+    </div>
+    <section class="market-subsection">
+      <h2>Current Open Bids</h2>
+      <div class="open-bid-grid">
+        ${open
+          .map(
+            ({ id, bid }) => `
+              <a href="${punkRoute(id)}" data-link>
+                ${punkThumbnail(id)}
+                <strong>#${id}</strong>
+                <span>${formatEth(bid.valueWei, 6)} ETH</span>
+                <small>by ${shortAddress(bid.bidder)}</small>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+    <section class="market-subsection">
+      <h2>Recent Bid Events</h2>
+      <div class="market-table-wrap">
+        <table class="market-table">
+          <thead><tr><th>Punk</th><th>Event</th><th>Bidder</th><th>To</th><th>Amount</th><th>Date</th></tr></thead>
+          <tbody>${globalEventRows(recent)}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+  bindNavigation();
 }
 
 async function renderSearch() {
@@ -656,6 +1101,9 @@ function bindRpcSettings() {
   const summary = document.querySelector<HTMLElement>("#rpc-summary");
   const clear = document.querySelector<HTMLButtonElement>("#clear-rpc");
 
+  if (!form || form.dataset.bound === "true") return;
+  form.dataset.bound = "true";
+
   const update = () => {
     const rpcs = getRpcList();
     if (summary) {
@@ -666,7 +1114,7 @@ function bindRpcSettings() {
     }
   };
 
-  form?.addEventListener("submit", (event) => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
     setCustomRpc(input?.value ?? "");
     update();
@@ -679,7 +1127,7 @@ function bindRpcSettings() {
 }
 
 function renderPlannedRoute() {
-  const route = location.pathname + location.search;
+  const route = applicationPathname() + location.search;
   document.title = "CryptoPunks — parity route in progress";
   app.innerHTML = `
     ${navigation}
@@ -712,25 +1160,34 @@ function renderNotFound(message: string) {
 
 async function renderRoute() {
   window.scrollTo(0, 0);
-  const detailMatch = location.pathname.match(
+  const pathname = applicationPathname().replace(/\/$/, "") || "/";
+  const detailMatch = pathname.match(
     /^\/cryptopunks\/details\/(\d+)\/?$/,
   );
 
   if (detailMatch) {
     await renderPunkDetail(Number(detailMatch[1]));
-  } else if (location.pathname === "/") {
+  } else if (pathname === "/") {
     renderHomepage();
-  } else if (
-    location.pathname === "/cryptopunks" ||
-    location.pathname === "/cryptopunks/"
-  ) {
+  } else if (pathname === "/cryptopunks" || pathname === "/cryptopunks/all") {
     await renderAllPunks();
-  } else if (location.pathname === "/cryptopunks/search") {
+  } else if (pathname === "/cryptopunks/search") {
     await renderSearch();
+  } else if (pathname === "/cryptopunks/owners" || pathname === "/cryptopunks/leaderboard") {
+    await renderOwners();
+  } else if (pathname === "/cryptopunks/accountinfo") {
+    await renderAccountInfo();
+  } else if (pathname === "/cryptopunks/largest-sales" || pathname === "/cryptopunks/topsales") {
+    await renderLargestSales();
+  } else if (pathname === "/cryptopunks/transactions" || pathname === "/cryptopunks/recents") {
+    await renderTransactions();
+  } else if (pathname === "/cryptopunks/bids") {
+    await renderBids();
   } else {
     renderPlannedRoute();
   }
 }
 
 window.addEventListener("popstate", () => void renderRoute());
+window.addEventListener("punks:transaction-confirmed", () => void renderRoute());
 void renderRoute();

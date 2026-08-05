@@ -31,15 +31,21 @@ The current milestone implements:
 - native offers and bids from the market contract;
 - a deterministic attribute snapshot for all 10,000 Punks at one Ethereum
   block;
-- 343,107 decoded native-market events, sharded and independently checksummed;
+- 343,132 decoded native-market events through Ethereum block 25,650,796,
+  sharded and independently checksummed;
 - complete offers, bids, sales and transfer history with a low/flash-bid toggle
   and JSON download;
+- deterministic owner, offer and bid reconstruction for all 10,000 Punks,
+  including correction of the legacy zero-recipient `PunkBought` event quirk;
+- browser-side synchronisation from the published checkpoint to the latest
+  reachable Ethereum block;
+- owner accounts and rankings, largest sales, recent transactions and bids;
 - the interactive `/cryptopunks` canonical collection map; and
 - the first `/cryptopunks/details/:id` parity route.
 
 It uses several RPC fallbacks and lets a visitor supply their own endpoint.
-Owner/ranking routes, market-aware collection filters, wallet transactions and
-immutable release infrastructure remain in progress.
+Market-aware collection filters, ENS names, wallet transactions and immutable
+release infrastructure remain in progress.
 
 Read the [implementation plan](docs/PLAN.md).
 
@@ -58,6 +64,26 @@ npm run build
 
 The generated `dist/` directory is static and can be opened through any HTTP,
 IPFS or compatible distributed-web gateway.
+
+For a path-independent, checksummed release with every direct route generated:
+
+```sh
+npm run release
+```
+
+See the [release and IPFS verification guide](docs/RELEASE.md).
+
+To reproduce the current history, ownership and market checkpoints:
+
+```sh
+npm run data:history
+npm run data:market
+npm run check
+```
+
+The history command populates an ignored local raw-log cache. The market command
+then derives the complete owner, offer, bid and global-statistics checkpoint
+without another hosted API request.
 
 ## Canonical contracts
 

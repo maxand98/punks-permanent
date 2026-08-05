@@ -1,0 +1,39 @@
+{
+  "schema": "https://cryptopunks.website/schemas/release-ledger-v1.json",
+  "release": "2026-08-05-wallet-drawer",
+  "sourceCommit": "d5fc28c",
+  "checkpoints": {
+    "attributes": 25642625,
+    "history": 25685009,
+    "marketState": 25685009
+  },
+  "ipfs": {
+    "cid": "bafybeiao2gcfvachekums46uezprcgz4fa3n5qfayi2cmcjlsyoearm4za",
+    "cidVersion": 1,
+    "rawLeaves": true,
+    "chunker": "size-262144",
+    "localPin": {
+      "peerId": "12D3KooWQKPpCFdCahWBjN8MgX8nA5suYU9s4ZgAQhWPEBiazfcd",
+      "type": "recursive"
+    }
+  },
+  "mirrors": {
+    "cloudflare": {
+      "worker": "cryptopunks-website",
+      "version": "5675df4c-2d7c-4fa1-ac38-53e08b1c386e",
+      "origins": [
+        "https://cryptopunks.website",
+        "https://www.cryptopunks.website",
+        "https://cryptopunks-website.maxand98.workers.dev"
+      ]
+    }
+  },
+  "status": {
+    "localIpfsPin": "verified",
+    "cloudflareApex": "verified",
+    "independentIpfsPins": 0,
+    "ensContenthash": "not-set",
+    "radicleMirror": "not-set",
+    "nostrNip34Announcement": "not-set"
+  }
+}

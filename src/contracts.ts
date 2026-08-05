@@ -25,6 +25,13 @@ export const dataAbi = [
 export const marketAbi = [
   {
     type: "function",
+    name: "pendingWithdrawals",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "punkIndexToAddress",
     stateMutability: "view",
     inputs: [{ name: "punkIndex", type: "uint256" }],
@@ -54,5 +61,81 @@ export const marketAbi = [
       { name: "bidder", type: "address" },
       { name: "value", type: "uint256" },
     ],
+  },
+  {
+    type: "function",
+    name: "buyPunk",
+    stateMutability: "payable",
+    inputs: [{ name: "punkIndex", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "enterBidForPunk",
+    stateMutability: "payable",
+    inputs: [{ name: "punkIndex", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawBidForPunk",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "punkIndex", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "acceptBidForPunk",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "punkIndex", type: "uint256" },
+      { name: "minPrice", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "offerPunkForSale",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "punkIndex", type: "uint256" },
+      { name: "minSalePriceInWei", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "offerPunkForSaleToAddress",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "punkIndex", type: "uint256" },
+      { name: "minSalePriceInWei", type: "uint256" },
+      { name: "toAddress", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "punkNoLongerForSale",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "punkIndex", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "transferPunk",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "punkIndex", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
   },
 ] as const satisfies Abi;

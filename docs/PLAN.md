@@ -47,6 +47,8 @@ independent, unofficial client.
 - Open-source deterministic log indexer.
 - Versioned event schema and golden test vectors.
 - Content-addressed snapshots for fast startup.
+- Browser-side tail synchronisation from the checkpoint to the latest reachable
+  Ethereum block; a checkpoint is never labelled live until this completes.
 - Full chain-log replay as the slower trustless fallback.
 - Derived figures label their block number and derivation version.
 
@@ -54,6 +56,7 @@ independent, unofficial client.
 
 - Reproducible static build with software bill of materials.
 - SHA-256 checksums and signed release manifest.
+- Path-independent assets and generated static entry points for direct routes.
 - IPFS publication with at least three independent pinning operators.
 - Arweave release copy to introduce a different storage failure model.
 - ENS contenthash and DNSLink convenience pointer.
@@ -82,8 +85,8 @@ Exit: scope, legal boundary and acceptance tests are public.
 ### Phase 1 — complete read-only collection client
 
 - [ ] All 10,000 Punks with virtualised browse, search and trait filters.
-- [ ] Owner pages, bids, offers, transfers and sales.
-- [ ] Block-number-labelled data and visible source provenance.
+- [x] Owner pages, bids, offers, transfers and sales.
+- [x] Block-number-labelled checkpoints and visible live-sync status.
 - [ ] RPC health, offline states, local cache and accessibility.
 - [ ] Direct contract mode that works without an indexer.
 
@@ -96,7 +99,7 @@ Exit: core collection browsing survives loss of every official API.
 - [x] Generate block-labelled, independently checksummed history snapshots.
 - [x] Verify snapshot output against known onchain Punk histories.
 - [ ] Specify V1 history as a separately labelled historical collection.
-- [ ] Add reproducible owners, leaderboards and market statistics.
+- [x] Add reproducible owners, leaderboards and ETH market statistics.
 
 Exit: a third party can reconstruct every displayed derived value.
 
@@ -112,11 +115,18 @@ Exit: the native market remains usable with no project-controlled backend.
 
 ### Phase 4 — immutable release system
 
-- [ ] Deterministic build in CI and independently reproduced checksum.
-- [ ] Signed manifest, dependency lock, SBOM and restore instructions.
-- [ ] Publish to IPFS and Arweave; verify from independent gateways/nodes.
+- [x] Deterministic build and checksum verification in local and GitHub CI
+      environments (independent operator reproduction remains pending).
+- [ ] Signed manifest, dependency lock, SBOM and restore instructions
+      (unsigned release manifest and checksums implemented).
+- [x] Produce and locally pin the first verified IPFS release CID; mirror the
+      same payload at `cryptopunks.website` through a replaceable Cloudflare
+      Worker (independent pins and Arweave copy remain pending).
+- [ ] Publish the same release to independent IPFS pins and Arweave; verify
+      retrieval from independent gateways and nodes.
 - [ ] Establish independent pinning partners and a public responsibility map.
-- [ ] Register `cryptopunks.website` and `cryptopunkswebsite.eth`.
+- [x] Register and activate `cryptopunks.website`.
+- [ ] Register `cryptopunkswebsite.eth`.
 - [ ] Configure the ENS contenthash and conventional-domain mirror.
 
 Exit: a release survives loss of GitHub, DNS and the primary host.

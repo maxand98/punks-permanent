@@ -54,14 +54,14 @@ exposes them. Routes still requiring live-browser confirmation are marked TBD.
 | All Punks | `/cryptopunks` | Browse 10,000; sale/bid colour states; open detail; search and filters | Composite hash/onchain art, market contract, deterministic index |
 | Search | `/cryptopunks/search?query=…` | Punk matches, for-sale subset, recent sales, bids and matching owners | Onchain attribute snapshot plus deterministic event index |
 | Punk detail | `/cryptopunks/details/:id` | Image, type, attribute rarity, current market status, actions, complete transaction history, low/flash-bid toggle, history download | CryptoPunksData, CryptoPunksMarket, Ethereum logs |
-| Owner/account | `/cryptopunks/accountinfo?account=:address` | Address/ENS identity, owned Punks, market activity and account actions | Contract state, ENS, deterministic event index |
-| Top owners | TBD | Ranked owners and holdings | Contract state snapshot |
+| Owner/account | `/cryptopunks/accountinfo?account=:address` | Address identity and owned Punks; ENS, activity and account actions remain | Checkpoint plus live contract-event synchronisation |
+| Top owners | `/cryptopunks/owners` | Ranked owners and sample holdings | Checkpoint plus live contract-event synchronisation |
 | Punk types | TBD | Male, Female, Zombie, Ape, Alien groups and counts | Onchain attribute snapshot |
 | Attributes | TBD | Trait directory and matching Punks | Onchain attribute snapshot |
 | Attribute counts | TBD | Distribution by number of attributes | Onchain attribute snapshot |
-| Largest sales | TBD | Ranked historical sales with Punk, parties, ETH, USD and date | `PunkBought` logs plus timestamped ETH/USD source |
-| Recent transactions | TBD | Offers, bids, transfers and sales in chronological order | Ethereum logs |
-| Bids | TBD | Current/recent bids and aggregate statistics | Contract state and Ethereum logs |
+| Largest sales | `/cryptopunks/largest-sales` | Ranked historical sales with Punk, parties, ETH and date; USD remains | `PunkBought` logs; optional timestamped ETH/USD source remains |
+| Recent transactions | `/cryptopunks/transactions` | Offers, bids, transfers and sales in chronological order | Checkpoint plus live Ethereum logs |
+| Bids | `/cryptopunks/bids` | Current/recent bids and aggregate statistics | Replayed contract state plus live Ethereum logs |
 | Wrapped Punks | external | Count and link to the wrapper client | Wrapped Punks contract |
 | Brand Hub | external | Preserve official outbound route | Static link |
 
@@ -149,7 +149,8 @@ its automated tests.
 | Attribute snapshot | Deterministic calls at one block; generated JSON includes block and contract | Implemented |
 | Current owner/offer/bid | Direct contract call | Implemented |
 | Complete event history | Direct log reconstruction with 100 independently checksummed acceleration shards | Implemented |
-| Owners and rankings | Deterministic state/event reconstruction | Planned |
+| Owners and rankings | Original Assign events, deterministic replay, then browser-side tail sync to latest reachable Ethereum block | Implemented |
+| Global sales, transactions and bid views | Deterministic history views plus browser-side tail sync | Implemented |
 | ETH/USD historical values | Signed, versioned external price corpus; never required for ETH truth | Planned |
 | ENS names | Forward and reverse onchain verification | Planned |
 
