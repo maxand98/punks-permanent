@@ -18,10 +18,45 @@ a { color: inherit; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 
-.site-header {
+.site-chrome {
   position: sticky;
   z-index: 20;
   top: 0;
+}
+
+.official-site-notice {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 22px;
+  border-bottom: 2px solid var(--ink);
+  background: #f1ff54;
+  text-align: center;
+}
+.official-site-notice strong {
+  font-size: clamp(16px, 2vw, 24px);
+  line-height: 1.1;
+  letter-spacing: -.025em;
+}
+.official-site-notice a {
+  flex: 0 0 auto;
+  border: 2px solid var(--ink);
+  padding: 8px 11px;
+  background: var(--ink);
+  color: #fff;
+  font: 800 12px/1.2 monospace;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.official-site-notice a:hover,
+.official-site-notice a:focus-visible {
+  background: #fff;
+  color: var(--ink);
+}
+
+.site-header {
   display: flex;
   align-items: center;
   gap: 26px;
@@ -469,6 +504,9 @@ footer > div:last-child { display: grid; align-content: start; gap: 10px; font-s
 }
 
 @media (max-width: 700px) {
+  .official-site-notice { flex-direction: column; gap: 8px; padding: 11px 16px; }
+  .official-site-notice strong { font-size: 16px; }
+  .official-site-notice a { font-size: 10px; }
   .site-header { min-height: 62px; }
   .wallet-button { display: none; }
   .home-hero h1 { font-size: 72px; }

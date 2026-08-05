@@ -23,31 +23,37 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
 
 const navigation = `
-  <header class="site-header">
-    <a class="brand" href="/" data-link>CryptoPunks</a>
-    <nav aria-label="Primary navigation">
-      <a href="https://hub.cryptopunks.app/">Brand Hub</a>
-      <a href="/cryptopunks" data-link>All CryptoPunks</a>
-      <a href="/cryptopunks/owners" data-link>Owners</a>
-      <details>
-        <summary>Types and Attributes</summary>
-        <div>
-          <a href="/cryptopunks/types" data-link>Punk Types</a>
-          <a href="/cryptopunks/attributes" data-link>Attributes</a>
-          <a href="/cryptopunks/attribute-counts" data-link>Attribute Counts</a>
-        </div>
-      </details>
-      <details>
-        <summary>Sales</summary>
-        <div>
-          <a href="/cryptopunks/largest-sales" data-link>Largest Sales</a>
-          <a href="/cryptopunks/transactions" data-link>Recent Transactions</a>
-          <a href="/cryptopunks/bids" data-link>Bids</a>
-        </div>
-      </details>
-    </nav>
-    <button class="wallet-button" type="button" disabled title="Wallet actions are the next parity phase">Connect Wallet</button>
-  </header>
+  <div class="site-chrome">
+    <aside class="official-site-notice" aria-label="Unofficial research project notice">
+      <strong>NOT OFFICIAL CRYPTOPUNKS SITE: RESEARCH PROJECT ONLY</strong>
+      <a href="https://cryptopunks.app/" rel="external">Official site is cryptopunks.app <span aria-hidden="true">↗</span></a>
+    </aside>
+    <header class="site-header">
+      <a class="brand" href="/" data-link>CryptoPunks</a>
+      <nav aria-label="Primary navigation">
+        <a href="https://hub.cryptopunks.app/">Brand Hub</a>
+        <a href="/cryptopunks" data-link>All CryptoPunks</a>
+        <a href="/cryptopunks/owners" data-link>Owners</a>
+        <details>
+          <summary>Types and Attributes</summary>
+          <div>
+            <a href="/cryptopunks/types" data-link>Punk Types</a>
+            <a href="/cryptopunks/attributes" data-link>Attributes</a>
+            <a href="/cryptopunks/attribute-counts" data-link>Attribute Counts</a>
+          </div>
+        </details>
+        <details>
+          <summary>Sales</summary>
+          <div>
+            <a href="/cryptopunks/largest-sales" data-link>Largest Sales</a>
+            <a href="/cryptopunks/transactions" data-link>Recent Transactions</a>
+            <a href="/cryptopunks/bids" data-link>Bids</a>
+          </div>
+        </details>
+      </nav>
+      <button class="wallet-button" type="button" disabled title="Wallet actions are the next parity phase">Connect Wallet</button>
+    </header>
+  </div>
 `;
 
 const footer = `
