@@ -58,21 +58,27 @@ const footer = `
         <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><a href="/notifications" data-link>Notifications</a></section>
         <div class="official-currency" role="group" aria-label="Price currency"><button type="button" aria-pressed="true">ETH</button><button type="button" aria-pressed="false">USD</button></div>
       </div>
-      <div class="official-footer-meta"><a href="/cryptopunks/terms" data-link>Terms</a><a href="https://licenseterms.cryptopunks.app/">License Terms</a><a href="https://nodefoundation.com/privacy">Privacy Policy</a><span>ⓒ 2026 CryptoPunks</span></div>
+      <div class="official-footer-meta">
+        <button class="official-language" type="button" aria-label="Select Language"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><path d="M2 10h16M10 2c2.2 2.2 3.3 4.9 3.3 8S12.2 15.8 10 18M10 2C7.8 4.2 6.7 6.9 6.7 10s1.1 5.8 3.3 8"></path></svg><span>English</span></button>
+        <div class="official-legal"><a href="/cryptopunks/terms" data-link>Terms</a><a href="https://licenseterms.cryptopunks.app/">License Terms</a><a href="https://nodefoundation.com/privacy">Privacy Policy</a><span>ⓒ 2026 CryptoPunks</span></div>
+      </div>
     </div>
   </footer>
   <aside class="preservation-notes" aria-labelledby="preservation-title">
     <div>
-      <p class="preservation-label">Decentralisation and preservation notes</p>
-      <h2 id="preservation-title">This interface has no indispensable origin server.</h2>
-      <p>The artwork and ownership truth come from Ethereum. The interface, verified data snapshots and route shells are reproducible, content-addressed and pin-ready on IPFS.</p>
+      <p class="preservation-label">TL;DR</p>
+      <h2 id="preservation-title">A preservation client, not another indispensable server.</h2>
+      <p>CryptoPunks.website packages a reproducible interface on IPFS and reads ownership, bids, offers, sales and artwork from Ethereum. It is independent and unofficial, and it does not yet reproduce every service offered by CryptoPunks.app.</p>
     </div>
-    <ol>
-      <li><strong>Clone</strong> the source and verify the release checksums.</li>
-      <li><strong>Build</strong> the static site, or fetch the published IPFS CID.</li>
-      <li><strong>Pin</strong> that CID on your own IPFS node and serve it from any gateway.</li>
-      <li><strong>Connect</strong> any Ethereum RPC or your own node for current ownership and market state.</li>
-    </ol>
+    <div class="preservation-differences">
+      <p class="preservation-label">Technical differences</p>
+      <ul>
+        <li><strong>Hosting:</strong> a static, content-addressed release replaces a required application origin.</li>
+        <li><strong>Live data:</strong> verified checkpoints load immediately, then the browser synchronises from any configured Ethereum RPC.</li>
+        <li><strong>Wallet:</strong> native market calls are simulated and sent through an injected Ethereum wallet; WalletConnect is not yet included.</li>
+        <li><strong>Remaining gaps:</strong> notifications, translations, USD conversion, ENS display and several secondary routes are still being rebuilt.</li>
+      </ul>
+    </div>
     <div class="preservation-links"><a href="https://github.com/maxand98/punks-permanent">Source code</a><a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal</a><a href="https://github.com/maxand98/punks-permanent/blob/agent/owner-market-routes/docs/REPLICATION.md">Replication guide</a><form id="rpc-form"><label for="rpc-url">Ethereum RPC URL</label><input id="rpc-url" type="url" placeholder="http://localhost:8545"><button type="submit">Use this node</button><button type="button" id="clear-rpc">Use fallbacks</button><small id="rpc-summary"></small></form></div>
   </aside>
 `;
@@ -466,7 +472,7 @@ function renderHomepage() {
         <p>Each Punk is algorithmically generated from 87 distinct attributes (hairstyles, accessories, and facial details) distributed across five archetypal types: 6,039 male humans, 3,840 female humans, 88 green zombies, 24 brown apes, and 9 ultra-rare blue aliens. The system forms a typology, a way to classify identity into recognizable categories. No two are the same.</p>
         <p>Unlike traditional portraits that are commissioned to capture how you look, CryptoPunks invert the process. You adopt a pre-existing avatar that signals how you want to be seen online. In this way, CryptoPunks are the defining portraits for the internet age, permanently inscribed on the blockchain and living on as networked art.</p>
         <p>Today, they trade in their own native marketplace; every bid, offer, and sale is visible and instantaneous. <mark class="status-blue">Blue</mark> means not for sale. <mark class="status-red">Red</mark> means listed for sale by their owner. <mark class="status-purple">Purple</mark> means there is an active bid on Punk. The system is simple, transparent, and verifiable.</p>
-        <p>See the <a href="#marketplace">marketplace instructions</a> below to acquire your very own Punk. You can also follow along on <a href="https://x.com/cryptopunksnfts">X</a> and <a href="https://www.instagram.com/cryptopunks/">IG</a> or join the community-run <a href="https://discord.gg/tQp4pSE">Discord</a>.</p>
+        <p>See the <a href="#marketplace">marketplace instructions</a> below to acquire your very own Punk. You can also follow along on <a href="https://x.com/cryptopunks">X</a> and <a href="https://www.instagram.com/cryptopunksofficial/">IG</a> or join the community-run <a href="https://discord.gg/tQp4pSE">Discord</a>.</p>
       </section>
       <div class="homepage-composite" role="img" aria-label="The complete canonical CryptoPunks composite"></div>
       <section class="official-section stats-section" id="homepage-live-stats">
@@ -481,7 +487,7 @@ function renderHomepage() {
       <section class="official-section"><h2>Sales</h2><p>Every completed native-market sale remains verifiable onchain. <a href="/cryptopunks/sales" data-link>Click here to see all sales.</a></p>${homepagePunkTiles(displayPunks.slice().reverse().slice(0, 20), "compact-strip")}</section>
       <section class="official-section"><h2>All CryptoPunks</h2><p>See all <a href="/cryptopunks/all" data-link>CryptoPunks here.</a></p>${homepagePunkTiles(displayPunks.slice(0, 20), "compact-strip")}</section>
       <section class="official-section"><h2>Wrapped CryptoPunks</h2><p>Wrapped Punks can trade on ERC-721 marketplaces. <a href="/cryptopunks/wrapped" data-link>Click here to see all wrapped Punks.</a></p>${homepagePunkTiles(displayPunks.slice(5, 25), "compact-strip status-wrapped-bg")}</section>
-      <section class="official-section faq-section"><h2>Q&amp;A</h2><details><summary>What is a CryptoPunk?</summary><p>One of 10,000 unique 24×24 pixel portraits created in 2017.</p></details><details><summary>What exactly is going on here?</summary><p>This interface reads the canonical Ethereum contracts and reproducible snapshots without an official API.</p></details><details><summary>How do I get a Punk?</summary><p>Use the native market with an Ethereum wallet. Transaction signing is being restored in the next parity phase.</p></details><details><summary>Where are the images for the Punks stored?</summary><p>The composite and image hash are recorded by the CryptoPunksData contract; this mirror also packages the verified composite.</p></details><details><summary>Are the Punks an ERC-721 token?</summary><p>The original CryptoPunks contract predates ERC-721. Wrapped Punks provide an ERC-721 representation.</p></details><details><summary>Where does the market data on this site come from?</summary><p>Ethereum event logs and current CryptoPunksMarket contract reads.</p></details><details><summary>Do you charge any fees for transactions?</summary><p>No. The native CryptoPunks market has no platform fee.</p></details></section>
+      <section class="official-section faq-section"><h2>Q&amp;A</h2><details><summary>What is a CryptoPunk?</summary><p>One of 10,000 unique 24×24 pixel portraits created in 2017.</p></details><details><summary>What exactly is going on here?</summary><p>This interface reads the canonical Ethereum contracts and reproducible snapshots without an official API.</p></details><details><summary>How do I get a Punk?</summary><p>Connect an Ethereum wallet on a Punk detail page to bid or buy through the zero-fee native CryptoPunks market.</p></details><details><summary>Where are the images for the Punks stored?</summary><p>The composite and image hash are recorded by the CryptoPunksData contract; this mirror also packages the verified composite.</p></details><details><summary>Are the Punks an ERC-721 token?</summary><p>The original CryptoPunks contract predates ERC-721. Wrapped Punks provide an ERC-721 representation.</p></details><details><summary>Where does the market data on this site come from?</summary><p>Ethereum event logs and current CryptoPunksMarket contract reads.</p></details><details><summary>Do you charge any fees for transactions?</summary><p>No. The native CryptoPunks market has no platform fee.</p></details><p class="inquiries">For inquiries, email <a href="mailto:punks@nodefoundation.com">punks@nodefoundation.com</a></p></section>
       <section class="official-section search-section"><h2>Search Punks</h2>${searchForm()}</section>
     </main>
     ${footer}
