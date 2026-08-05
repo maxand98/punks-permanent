@@ -15,9 +15,9 @@ const checksums = (
     return { sha256, path };
   });
 
-if (manifest.routes.generatedShells !== 10_010) {
+if (manifest.routes.generatedShells !== 10_018) {
   throw new Error(
-    `Expected 10,010 route shells, received ${manifest.routes.generatedShells}.`,
+    `Expected 10,018 route shells, received ${manifest.routes.generatedShells}.`,
   );
 }
 for (const path of [

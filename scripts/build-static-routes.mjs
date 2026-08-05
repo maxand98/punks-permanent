@@ -13,6 +13,14 @@ const fixedRoutes = [
   "cryptopunks/types",
   "cryptopunks/attributes",
   "cryptopunks/attribute-counts",
+  "cryptopunks/all",
+  "cryptopunks/leaderboard",
+  "cryptopunks/topsales",
+  "cryptopunks/recents",
+  "cryptopunks/forSale",
+  "cryptopunks/sales",
+  "cryptopunks/wrapped",
+  "cryptopunks/terms",
 ];
 const routes = [
   ...fixedRoutes,

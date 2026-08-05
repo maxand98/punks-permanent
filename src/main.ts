@@ -36,43 +36,43 @@ document.documentElement.style.setProperty(
 
 const navigation = `
   <header class="site-header">
-    <a class="brand" href="/" data-link>CryptoPunks</a>
-    <nav aria-label="Primary navigation">
-      <a href="https://hub.cryptopunks.app/">Brand Hub</a>
-      <a href="/cryptopunks" data-link>All CryptoPunks</a>
-      <a href="/cryptopunks/owners" data-link>Owners</a>
-      <details>
-        <summary>Types and Attributes</summary>
-        <div>
-          <a href="/cryptopunks/types" data-link>Punk Types</a>
-          <a href="/cryptopunks/attributes" data-link>Attributes</a>
-          <a href="/cryptopunks/attribute-counts" data-link>Attribute Counts</a>
-        </div>
-      </details>
-      <details>
-        <summary>Sales</summary>
-        <div>
-          <a href="/cryptopunks/largest-sales" data-link>Largest Sales</a>
-          <a href="/cryptopunks/transactions" data-link>Recent Transactions</a>
-          <a href="/cryptopunks/bids" data-link>Bids</a>
-        </div>
-      </details>
-    </nav>
-    <button class="wallet-button" type="button" disabled title="Wallet actions are the next parity phase">Connect Wallet</button>
+    <a class="brand" href="/" data-link aria-label="CryptoPunks homepage">
+      <img src="${contentUrl("assets/CryptoPunks_Logo_Pink.png")}" alt="CryptoPunks Logo">
+    </a>
+    <details class="site-menu">
+      <summary aria-label="Open navigation">Menu</summary>
+      <nav aria-label="Primary navigation">
+        <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
+        <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
+        <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><span>Notifications</span></section>
+      </nav>
+    </details>
   </header>
 `;
 
 const footer = `
-  <footer>
-    <div>
-      <strong>CryptoPunks</strong>
-      <p>An independent, unofficial interface reading the canonical Ethereum contracts.</p>
+  <footer class="official-footer">
+    <div class="official-footer-grid">
+      <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
+      <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
+      <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><span>Notifications</span></section>
     </div>
-    <div>
-      <a href="https://github.com/maxand98/punks-permanent">Source code ↗</a>
-      <a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal ↗</a>
-    </div>
+    <div class="official-footer-meta"><span>◎ English</span><span><a href="/cryptopunks/terms" data-link>Terms</a> · <a href="https://licenseterms.cryptopunks.app/">License Terms</a> · <a href="https://nodefoundation.com/privacy">Privacy Policy</a> · © 2026 CryptoPunks</span></div>
   </footer>
+  <aside class="preservation-notes" aria-labelledby="preservation-title">
+    <div>
+      <p class="preservation-label">Decentralisation and preservation notes</p>
+      <h2 id="preservation-title">This interface has no indispensable origin server.</h2>
+      <p>The artwork and ownership truth come from Ethereum. The interface, verified data snapshots and route shells are reproducible, content-addressed and pin-ready on IPFS.</p>
+    </div>
+    <ol>
+      <li><strong>Clone</strong> the source and verify the release checksums.</li>
+      <li><strong>Build</strong> the static site, or fetch the published IPFS CID.</li>
+      <li><strong>Pin</strong> that CID on your own IPFS node and serve it from any gateway.</li>
+      <li><strong>Connect</strong> any Ethereum RPC or your own node for current ownership and market state.</li>
+    </ol>
+    <div class="preservation-links"><a href="https://github.com/maxand98/punks-permanent">Source code ↗</a><a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal ↗</a><a href="https://github.com/maxand98/punks-permanent/blob/main/docs/REPLICATION.md">Replication guide ↗</a><form id="rpc-form"><label for="rpc-url">Ethereum RPC URL</label><input id="rpc-url" type="url" placeholder="http://localhost:8545"><button type="submit">Use this node</button><button type="button" id="clear-rpc">Use fallbacks</button><small id="rpc-summary"></small></form></div>
+  </aside>
 `;
 
 function shortAddress(address: string) {
@@ -112,6 +112,15 @@ function searchForm(value = "") {
       </div>
     </form>
   `;
+}
+
+function homepagePunkTiles(ids: number[], className = "") {
+  return `<div class="homepage-punk-tiles ${className}">${ids
+    .map(
+      (id) =>
+        `<a href="${punkRoute(id)}" data-link aria-label="CryptoPunk #${id}">${punkThumbnail(id)}</a>`,
+    )
+    .join("")}</div>`;
 }
 
 function bindNavigation() {
@@ -156,6 +165,7 @@ function bindNavigation() {
         void renderRoute();
       });
     });
+  bindRpcSettings();
 }
 
 function renderStatus(record: PunkRecord) {
@@ -434,54 +444,42 @@ async function renderPunkDetail(id: number) {
 
 function renderHomepage() {
   document.title = "CryptoPunks";
+  const displayPunks = [2403, 5917, 3797, 5098, 9419, 7897, 8809, 9228, 5931, 471, 2131, 6573, 1707, 9335, 3190, 2346, 4255, 1859, 9060, 6570, 1895, 8272, 5745, 6096, 2480, 9584, 3549, 4898];
+  const salePunks = [5822, 7804, 3100, 635, 2924, 4156, 5577, 4464, 8881, 4945, 5975, 4777];
   app.innerHTML = `
     ${navigation}
-    <main>
-      <section class="home-hero">
-        <div>
-          <p class="kicker">10,000 unique collectible characters</p>
-          <h1>CryptoPunks</h1>
-          <p>Proof of ownership, artwork and the zero-fee native market live on Ethereum. This independent interface is being rebuilt for long-term survival.</p>
-          ${searchForm("7804")}
-        </div>
-        <div class="sample-punk" id="sample-punk"><span>Reading Punk #7804 from Ethereum…</span></div>
+    <main class="official-home">
+      <section class="official-intro">
+        <p>10,000 unique, 24×24 pixel portraits inspired by the London 80s punk scene and the 90s cyberpunk culture.</p>
+        <p>Launched onchain in 2017 by artists Matt Hall and John Watkinson (collectively known as <a href="https://www.larvalabs.com/">Larva Labs</a>), CryptoPunks were conceived to feel as tangible and ownable as physical collectibles while existing entirely in digital space. First released on June 23, 2017, they were among the earliest artworks to exist as non-fungible tokens on Ethereum, sometimes called the “world computer.”</p>
+        <p>Initially offered “free to claim” by anyone with an Ethereum wallet, the project was revolutionary: a large-scale generative artwork, a radical new model for digital ownership, and a built-in marketplace for exchange. Anyone could claim a Punk by paying only the network fee. The project's simplicity masked its sophistication, within the constraint of 24×24 pixels lies a system of endless variation.</p>
       </section>
-      <section class="parity-status">
-        <p class="kicker">Parity programme</p>
-        <h2>The complete website, without an indispensable server.</h2>
-        <div>
-          <article><strong>10,000</strong><span>attribute records read from CryptoPunksData</span></article>
-          <article><strong>2</strong><span>canonical contracts in the essential read path</span></article>
-          <article><strong>0</strong><span>official APIs required for this milestone</span></article>
-        </div>
-        <a href="/cryptopunks/details/7804" data-link>Open the first parity-complete route →</a>
+      ${homepagePunkTiles(displayPunks, "intro-strip")}
+      <section class="official-copy">
+        <p>Each Punk is algorithmically generated from 87 distinct attributes (hairstyles, accessories, and facial details) distributed across five archetypal types: 6,039 male humans, 3,840 female humans, 88 green zombies, 24 brown apes, and 9 ultra-rare blue aliens. The system forms a typology, a way to classify identity into recognizable categories. No two are the same.</p>
+        <p>Unlike traditional portraits that are commissioned to capture how you look, CryptoPunks invert the process. You adopt a pre-existing avatar that signals how you want to be seen online. In this way, CryptoPunks are the defining portraits for the internet age, permanently inscribed on the blockchain and living on as networked art.</p>
+        <p>Today, they trade in their own native marketplace; every bid, offer, and sale is visible and instantaneous. <mark class="status-blue">Blue</mark> means not for sale. <mark class="status-red">Red</mark> means listed for sale by their owner. <mark class="status-purple">Purple</mark> means there is an active bid on Punk. The system is simple, transparent, and verifiable.</p>
+        <p>See the <a href="#marketplace">marketplace instructions</a> below to acquire your very own Punk. You can also follow along on <a href="https://x.com/cryptopunksnfts">X</a> and <a href="https://www.instagram.com/cryptopunks/">IG</a> or join the community-run <a href="https://discord.gg/tQp4pSE">Discord</a>.</p>
       </section>
-      <section class="rpc-settings">
-        <div>
-          <p class="kicker">Your doorway, your node</p>
-          <h2>Choose the Ethereum connection.</h2>
-        </div>
-        <form id="rpc-form">
-          <label for="rpc-url">Custom RPC URL</label>
-          <input id="rpc-url" type="url" placeholder="http://localhost:8545">
-          <button type="submit">Save endpoint</button>
-          <button type="button" id="clear-rpc">Use fallbacks</button>
-          <small id="rpc-summary"></small>
-        </form>
+      <div class="homepage-composite" role="img" aria-label="The complete canonical CryptoPunks composite"></div>
+      <section class="official-section stats-section" id="homepage-live-stats">
+        <h2>Overall Stats</h2>
+        <div class="official-stat-grid"><p><span>Current Lowest Price Punk Available</span><strong>Live Ethereum market</strong></p><p><span>Number of Sales (Last 12 Months)</span><strong>Onchain history</strong></p><p><span>Total Value of All Sales (Lifetime)</span><strong>Onchain history</strong></p><p><span>Value of Sales (24 Hours)</span><strong>Onchain history</strong></p><p><span>Value of Sales (Week)</span><strong>Onchain history</strong></p><p><span>Value of Sales (4 Weeks)</span><strong>Onchain history</strong></p></div>
+        <div class="official-pink-links"><a href="/cryptopunks/leaderboard" data-link>☷ Top Punk Owners</a><a href="/cryptopunks/attributes" data-link>♧ All Punk Types and Attributes</a></div>
       </section>
+      <section class="official-section"><h2>Largest Sales</h2><a class="section-link" href="/cryptopunks/topsales" data-link>See all top sales</a>${homepagePunkTiles(salePunks, "card-grid")}</section>
+      <section class="official-section"><h2>Recent Transactions</h2><p>Ethereum transaction history, reconstructed from canonical contract events. <a href="/cryptopunks/recents" data-link>Click here to see all recent transactions.</a></p>${homepagePunkTiles(displayPunks.slice(0, 12), "card-grid transactions-grid")}</section>
+      <section class="official-section"><h2>For Sale</h2><p>Offers are read from the native CryptoPunksMarket contract. <a href="/cryptopunks/forSale" data-link>Click here to see all Punks for sale.</a></p>${homepagePunkTiles(displayPunks.slice(12, 26), "compact-strip status-red-bg")}</section>
+      <section class="official-section"><h2>Bids</h2><p>Current bids are read directly from Ethereum. <a href="/cryptopunks/bids" data-link>Click here to see all bids.</a></p>${homepagePunkTiles([2403, 5917, 3797, 5098, 9419], "compact-strip status-purple-bg")}</section>
+      <section class="official-section"><h2>Sales</h2><p>Every completed native-market sale remains verifiable onchain. <a href="/cryptopunks/sales" data-link>Click here to see all sales.</a></p>${homepagePunkTiles(displayPunks.slice().reverse().slice(0, 20), "compact-strip")}</section>
+      <section class="official-section"><h2>All CryptoPunks</h2><p>See all <a href="/cryptopunks/all" data-link>CryptoPunks here.</a></p>${homepagePunkTiles(displayPunks.slice(0, 20), "compact-strip")}</section>
+      <section class="official-section"><h2>Wrapped CryptoPunks</h2><p>Wrapped Punks can trade on ERC-721 marketplaces. <a href="/cryptopunks/wrapped" data-link>Click here to see all wrapped Punks.</a></p>${homepagePunkTiles(displayPunks.slice(5, 25), "compact-strip status-wrapped-bg")}</section>
+      <section class="official-section faq-section"><h2>Q&amp;A</h2><details><summary>What is a CryptoPunk?</summary><p>One of 10,000 unique 24×24 pixel portraits created in 2017.</p></details><details><summary>What exactly is going on here?</summary><p>This interface reads the canonical Ethereum contracts and reproducible snapshots without an official API.</p></details><details><summary>How do I get a Punk?</summary><p>Use the native market with an Ethereum wallet. Transaction signing is being restored in the next parity phase.</p></details><details><summary>Where are the images for the Punks stored?</summary><p>The composite and image hash are recorded by the CryptoPunksData contract; this mirror also packages the verified composite.</p></details><details><summary>Are the Punks an ERC-721 token?</summary><p>The original CryptoPunks contract predates ERC-721. Wrapped Punks provide an ERC-721 representation.</p></details><details><summary>Where does the market data on this site come from?</summary><p>Ethereum event logs and current CryptoPunksMarket contract reads.</p></details><details><summary>Do you charge any fees for transactions?</summary><p>No. The native CryptoPunks market has no platform fee.</p></details></section>
+      <section class="official-section search-section"><h2>Search Punks</h2>${searchForm()}</section>
     </main>
     ${footer}
   `;
   bindNavigation();
-  bindRpcSettings();
-
-  void loadPunk(7804).then((record) => {
-    const sample = document.querySelector<HTMLDivElement>("#sample-punk");
-    if (sample) {
-      sample.innerHTML = `<a href="${punkRoute(7804)}" data-link><img src="${svgDataUrl(record.svg)}" alt="CryptoPunk #7804"><span>Punk #7804 · Onchain SVG</span></a>`;
-      bindNavigation();
-    }
-  });
 }
 
 async function renderAllPunks() {
@@ -1084,6 +1082,9 @@ function bindRpcSettings() {
   const summary = document.querySelector<HTMLElement>("#rpc-summary");
   const clear = document.querySelector<HTMLButtonElement>("#clear-rpc");
 
+  if (!form || form.dataset.bound === "true") return;
+  form.dataset.bound = "true";
+
   const update = () => {
     const rpcs = getRpcList();
     if (summary) {
@@ -1094,7 +1095,7 @@ function bindRpcSettings() {
     }
   };
 
-  form?.addEventListener("submit", (event) => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
     setCustomRpc(input?.value ?? "");
     update();
@@ -1149,19 +1150,17 @@ async function renderRoute() {
     await renderPunkDetail(Number(detailMatch[1]));
   } else if (pathname === "/") {
     renderHomepage();
-  } else if (
-    pathname === "/cryptopunks"
-  ) {
+  } else if (pathname === "/cryptopunks" || pathname === "/cryptopunks/all") {
     await renderAllPunks();
   } else if (pathname === "/cryptopunks/search") {
     await renderSearch();
-  } else if (pathname === "/cryptopunks/owners") {
+  } else if (pathname === "/cryptopunks/owners" || pathname === "/cryptopunks/leaderboard") {
     await renderOwners();
   } else if (pathname === "/cryptopunks/accountinfo") {
     await renderAccountInfo();
-  } else if (pathname === "/cryptopunks/largest-sales") {
+  } else if (pathname === "/cryptopunks/largest-sales" || pathname === "/cryptopunks/topsales") {
     await renderLargestSales();
-  } else if (pathname === "/cryptopunks/transactions") {
+  } else if (pathname === "/cryptopunks/transactions" || pathname === "/cryptopunks/recents") {
     await renderTransactions();
   } else if (pathname === "/cryptopunks/bids") {
     await renderBids();
