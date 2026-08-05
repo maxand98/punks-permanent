@@ -8,6 +8,7 @@ import {
 import { CRYPTOPUNKS_MARKET } from "./contracts";
 import { getEthereumLogClient } from "./ethereum";
 import type { MarketEvent, MarketEventType } from "./history";
+import { contentUrl } from "./paths";
 
 export interface CurrentOffer {
   seller: string;
@@ -101,7 +102,7 @@ const syncAbi = parseAbi([
 ]);
 
 async function loadJson<T>(path: string) {
-  const response = await fetch(path);
+  const response = await fetch(contentUrl(path));
   if (!response.ok) throw new Error(`Could not load ${path}`);
   return (await response.json()) as T;
 }

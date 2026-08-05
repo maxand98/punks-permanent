@@ -56,6 +56,7 @@ independent, unofficial client.
 
 - Reproducible static build with software bill of materials.
 - SHA-256 checksums and signed release manifest.
+- Path-independent assets and generated static entry points for direct routes.
 - IPFS publication with at least three independent pinning operators.
 - Arweave release copy to introduce a different storage failure model.
 - ENS contenthash and DNSLink convenience pointer.
@@ -114,8 +115,10 @@ Exit: the native market remains usable with no project-controlled backend.
 
 ### Phase 4 — immutable release system
 
-- [ ] Deterministic build in CI and independently reproduced checksum.
-- [ ] Signed manifest, dependency lock, SBOM and restore instructions.
+- [ ] Deterministic build in CI and independently reproduced checksum (workflow
+      and local release verifier implemented; independent CI result pending).
+- [ ] Signed manifest, dependency lock, SBOM and restore instructions
+      (unsigned release manifest and checksums implemented).
 - [ ] Publish to IPFS and Arweave; verify from independent gateways/nodes.
 - [ ] Establish independent pinning partners and a public responsibility map.
 - [ ] Register `cryptopunks.website` and `cryptopunkswebsite.eth`.

@@ -17,7 +17,7 @@ export type CatalogSnapshot = {
 let catalogPromise: Promise<CatalogSnapshot> | undefined;
 
 export function loadCatalog() {
-  catalogPromise ??= fetch("/data/punks-attributes.json").then(
+  catalogPromise ??= fetch(contentUrl("data/punks-attributes.json")).then(
     async (response) => {
       if (!response.ok) {
         throw new Error("The deterministic attribute snapshot is unavailable.");
@@ -35,3 +35,4 @@ export function typeDescription(type: string, count: number) {
 export function normalizePunkType(type: string) {
   return type.replace(/ [1-4]$/, "");
 }
+import { contentUrl } from "./paths";

@@ -25,9 +25,14 @@ import {
   type GlobalMarketEvent,
   type MarketSync,
 } from "./market";
+import { applicationPathname, contentUrl } from "./paths";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
+document.documentElement.style.setProperty(
+  "--punks-composite-url",
+  `url("${contentUrl("assets/punks.png")}")`,
+);
 
 const navigation = `
   <header class="site-header">
@@ -112,11 +117,17 @@ function searchForm(value = "") {
 function bindNavigation() {
   document.querySelectorAll<HTMLAnchorElement>("[data-link]").forEach((link) => {
     if (link.dataset.bound === "true") return;
+    const rawHref = link.getAttribute("href") ?? "/";
+    const route = link.dataset.route ?? rawHref;
+    if (route.startsWith("/")) {
+      link.dataset.route = route;
+      link.href = contentUrl(route);
+    }
     link.dataset.bound = "true";
     link.addEventListener("click", (event) => {
       if (link.origin !== location.origin) return;
       event.preventDefault();
-      history.pushState(null, "", link.pathname + link.search);
+      history.pushState(null, "", contentUrl(link.dataset.route ?? "/"));
       void renderRoute();
     });
   });
@@ -132,12 +143,12 @@ function bindNavigation() {
         const query = input?.value.trim() ?? "";
         const id = Number(query);
         if (/^\d+$/.test(query) && Number.isInteger(id) && id >= 0 && id <= 9999) {
-          history.pushState(null, "", punkRoute(id));
+          history.pushState(null, "", contentUrl(punkRoute(id)));
         } else if (query) {
           history.pushState(
             null,
             "",
-            `/cryptopunks/search?query=${encodeURIComponent(query)}`,
+            contentUrl(`/cryptopunks/search?query=${encodeURIComponent(query)}`),
           );
         } else {
           return;
@@ -305,7 +316,7 @@ function renderHistory(
         <tbody id="history-rows">${historyRows(events, false)}</tbody>
       </table>
     </div>
-    <p class="history-source">Reconstructed from CryptoPunksMarket events. Snapshot SHA-256 values are published in the <a href="/data/history-manifest.json">release manifest</a>.</p>
+    <p class="history-source">Reconstructed from CryptoPunksMarket events. Snapshot SHA-256 values are published in the <a href="${contentUrl("data/history-manifest.json")}">release manifest</a>.</p>
   `;
 }
 
@@ -496,7 +507,7 @@ async function renderAllPunks() {
           <output id="map-selection">Move across the map to identify a Punk.</output>
         </div>
         <button class="punk-map" id="punk-map" type="button" aria-label="Interactive map of all 10,000 CryptoPunks">
-          <img src="/assets/punks.png" alt="All 10,000 CryptoPunks in their canonical 100 by 100 arrangement">
+          <img src="${contentUrl("assets/punks.png")}" alt="All 10,000 CryptoPunks in their canonical 100 by 100 arrangement">
           <span class="map-cursor" id="map-cursor" hidden></span>
         </button>
         <p class="map-provenance">Composite SHA-256 <code>ac39af4793119ee46bbff351d8cb6b5f23da60222126add4268e261199a2921b</code>, matching the hash embedded in CryptoPunksMarket.</p>
@@ -538,7 +549,7 @@ async function renderAllPunks() {
   });
   map?.addEventListener("click", (event) => {
     const id = locate(event);
-    history.pushState(null, "", punkRoute(id));
+    history.pushState(null, "", contentUrl(punkRoute(id)));
     void renderRoute();
   });
 
@@ -1096,7 +1107,7 @@ function bindRpcSettings() {
 }
 
 function renderPlannedRoute() {
-  const route = location.pathname + location.search;
+  const route = applicationPathname() + location.search;
   document.title = "CryptoPunks — parity route in progress";
   app.innerHTML = `
     ${navigation}
@@ -1129,30 +1140,30 @@ function renderNotFound(message: string) {
 
 async function renderRoute() {
   window.scrollTo(0, 0);
-  const detailMatch = location.pathname.match(
+  const pathname = applicationPathname().replace(/\/$/, "") || "/";
+  const detailMatch = pathname.match(
     /^\/cryptopunks\/details\/(\d+)\/?$/,
   );
 
   if (detailMatch) {
     await renderPunkDetail(Number(detailMatch[1]));
-  } else if (location.pathname === "/") {
+  } else if (pathname === "/") {
     renderHomepage();
   } else if (
-    location.pathname === "/cryptopunks" ||
-    location.pathname === "/cryptopunks/"
+    pathname === "/cryptopunks"
   ) {
     await renderAllPunks();
-  } else if (location.pathname === "/cryptopunks/search") {
+  } else if (pathname === "/cryptopunks/search") {
     await renderSearch();
-  } else if (location.pathname === "/cryptopunks/owners") {
+  } else if (pathname === "/cryptopunks/owners") {
     await renderOwners();
-  } else if (location.pathname === "/cryptopunks/accountinfo") {
+  } else if (pathname === "/cryptopunks/accountinfo") {
     await renderAccountInfo();
-  } else if (location.pathname === "/cryptopunks/largest-sales") {
+  } else if (pathname === "/cryptopunks/largest-sales") {
     await renderLargestSales();
-  } else if (location.pathname === "/cryptopunks/transactions") {
+  } else if (pathname === "/cryptopunks/transactions") {
     await renderTransactions();
-  } else if (location.pathname === "/cryptopunks/bids") {
+  } else if (pathname === "/cryptopunks/bids") {
     await renderBids();
   } else {
     renderPlannedRoute();

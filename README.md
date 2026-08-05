@@ -65,6 +65,14 @@ npm run build
 The generated `dist/` directory is static and can be opened through any HTTP,
 IPFS or compatible distributed-web gateway.
 
+For a path-independent, checksummed release with every direct route generated:
+
+```sh
+npm run release
+```
+
+See the [release and IPFS verification guide](docs/RELEASE.md).
+
 To reproduce the current history, ownership and market checkpoints:
 
 ```sh

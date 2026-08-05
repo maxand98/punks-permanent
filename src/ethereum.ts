@@ -19,6 +19,12 @@ const DEFAULT_RPCS = [
   "https://cloudflare-eth.com",
 ];
 
+const LOG_RPCS = [
+  "https://ethereum-rpc.publicnode.com",
+  "https://eth.llamarpc.com",
+  "https://1rpc.io/eth",
+];
+
 export type PunkRecord = {
   id: number;
   svg: string;
@@ -45,9 +51,7 @@ export function getEthereumClient() {
 
 export function getEthereumLogClient() {
   const custom = localStorage.getItem("punks-permanent-rpc")?.trim();
-  const urls = custom
-    ? [custom, "https://1rpc.io/eth"]
-    : ["https://1rpc.io/eth"];
+  const urls = custom ? [custom, ...LOG_RPCS] : LOG_RPCS;
   return createPublicClient({
     chain: mainnet,
     transport: fallback(

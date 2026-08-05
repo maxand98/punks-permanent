@@ -567,7 +567,7 @@ button { cursor: pointer; }
   aspect-ratio: 1;
   margin-bottom: 12px;
   background-color: var(--purple);
-  background-image: url("/assets/punks.png");
+  background-image: var(--punks-composite-url);
   background-position: var(--punk-x) var(--punk-y);
   background-size: 10000% 10000%;
   image-rendering: pixelated;

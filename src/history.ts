@@ -51,7 +51,7 @@ let manifestPromise: Promise<HistoryManifest> | undefined;
 const shardPromises = new Map<number, Promise<HistoryShard>>();
 
 export function loadHistoryManifest() {
-  manifestPromise ??= fetch("/data/history-manifest.json").then(
+  manifestPromise ??= fetch(contentUrl("data/history-manifest.json")).then(
     async (response) => {
       if (!response.ok) throw new Error("History manifest is unavailable.");
       return (await response.json()) as HistoryManifest;
@@ -65,7 +65,7 @@ export async function loadPunkHistory(id: number) {
   let shardPromise = shardPromises.get(shardIndex);
   if (!shardPromise) {
     const filename = `${String(shardIndex).padStart(2, "0")}.json`;
-    shardPromise = fetch(`/data/history/${filename}`).then(async (response) => {
+    shardPromise = fetch(contentUrl(`data/history/${filename}`)).then(async (response) => {
       if (!response.ok) throw new Error(`History shard ${filename} is unavailable.`);
       return (await response.json()) as HistoryShard;
     });
@@ -80,3 +80,4 @@ export async function loadPunkHistory(id: number) {
     manifest,
   };
 }
+import { contentUrl } from "./paths";
