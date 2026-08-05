@@ -71,7 +71,7 @@ const footer = `
       <li><strong>Pin</strong> that CID on your own IPFS node and serve it from any gateway.</li>
       <li><strong>Connect</strong> any Ethereum RPC or your own node for current ownership and market state.</li>
     </ol>
-    <div class="preservation-links"><a href="https://github.com/maxand98/punks-permanent">Source code ↗</a><a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal ↗</a><a href="https://github.com/maxand98/punks-permanent/blob/agent/owner-market-routes/docs/REPLICATION.md">Replication guide ↗</a><form id="rpc-form"><label for="rpc-url">Ethereum RPC URL</label><input id="rpc-url" type="url" placeholder="http://localhost:8545"><button type="submit">Use this node</button><button type="button" id="clear-rpc">Use fallbacks</button><small id="rpc-summary"></small></form></div>
+    <div class="preservation-links"><a href="https://github.com/maxand98/punks-permanent">Source code</a><a href="https://maxand98.com/writing/the-punks-are-permanent/">Preservation proposal</a><a href="https://github.com/maxand98/punks-permanent/blob/agent/owner-market-routes/docs/REPLICATION.md">Replication guide</a><form id="rpc-form"><label for="rpc-url">Ethereum RPC URL</label><input id="rpc-url" type="url" placeholder="http://localhost:8545"><button type="submit">Use this node</button><button type="button" id="clear-rpc">Use fallbacks</button><small id="rpc-summary"></small></form></div>
   </aside>
 `;
 
