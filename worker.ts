@@ -14,7 +14,7 @@ const AGENT_LINKS = [
 ].join(", ");
 
 const CONTENT_TYPES = new Map<string, string>([
-  ["/.well-known/api-catalog", "application/json; charset=utf-8"],
+  ["/.well-known/api-catalog", "application/linkset+json; charset=utf-8"],
   ["/.well-known/openapi.json", "application/json; charset=utf-8"],
   ["/.well-known/agent-skills/index.json", "application/json; charset=utf-8"],
   ["/.well-known/agent-skills/cryptopunks-research/SKILL.md", "text/markdown; charset=utf-8"],
@@ -55,4 +55,3 @@ export default {
     return withDiscovery(response, negotiatedType);
   },
 };
-

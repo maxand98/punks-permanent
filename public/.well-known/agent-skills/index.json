@@ -1,8 +1,9 @@
 {
-  "version": "1.0",
+  "$schema": "https://raw.githubusercontent.com/cloudflare/agent-skills-discovery-rfc/main/schema/agent-skills-index.json",
   "skills": [
     {
       "name": "cryptopunks-research",
+      "type": "skill-md",
       "description": "Research CryptoPunks traits, provenance, and current contract state.",
       "url": "https://cryptopunks.website/.well-known/agent-skills/cryptopunks-research/SKILL.md",
       "digest": "sha256:181a2b529c681e50c85b07692d20979724bbb3046ee4d4d4203816b15116651f"
