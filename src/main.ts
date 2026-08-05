@@ -26,6 +26,7 @@ import {
   type MarketSync,
 } from "./market";
 import { applicationPathname, contentUrl } from "./paths";
+import { bindWalletDrawer } from "./wallet";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 if (!app) throw new Error("Application root is missing.");
@@ -39,15 +40,13 @@ const navigation = `
     <a class="brand" href="/" data-link aria-label="CryptoPunks homepage">
       <img src="${contentUrl("assets/CryptoPunks_Logo_Pink.png")}" alt="CryptoPunks Logo">
     </a>
-    <details class="site-menu">
-      <summary aria-label="Open navigation">Menu</summary>
-      <nav aria-label="Primary navigation">
-        <section><strong>Explore</strong><a href="https://hub.cryptopunks.app/">Brand Hub</a><a href="/cryptopunks/all" data-link>All CryptoPunks</a><a href="/cryptopunks/leaderboard" data-link>Owners</a></section>
-        <section><strong>Types and Attributes</strong><a href="/cryptopunks/attributes#punk-types" data-link>Punk Types</a><a href="/cryptopunks/attributes#attributes" data-link>Attributes</a><a href="/cryptopunks/attributes#attribute-counts" data-link>Attribute Counts</a></section>
-        <section><strong>Activity</strong><a href="/cryptopunks/recents" data-link>Recent Transactions</a><a href="/cryptopunks/bids" data-link>Bids</a><span>Notifications</span></section>
-      </nav>
-    </details>
   </header>
+  <aside class="wallet-drawer is-collapsed" data-wallet-drawer aria-label="Ethereum wallet">
+    <button class="wallet-tab" type="button" data-wallet-tab>Connect Wallet</button>
+    <section class="wallet-panel" data-wallet-panel>
+      <button class="wallet-collapse" type="button" data-wallet-collapse aria-label="Collapse wallet panel">›</button>
+    </section>
+  </aside>
 `;
 
 const footer = `
@@ -166,6 +165,7 @@ function bindNavigation() {
       });
     });
   bindRpcSettings();
+  bindWalletDrawer();
 }
 
 function renderStatus(record: PunkRecord) {
@@ -196,10 +196,10 @@ function renderStatus(record: PunkRecord) {
         </div>
       </dl>
       <div class="market-actions">
-        ${record.offer ? '<button type="button" disabled>Buy</button>' : ""}
-        <button type="button" disabled>Bid</button>
+        ${record.offer ? '<button type="button" data-wallet-required>Buy</button>' : ""}
+        <button type="button" data-wallet-required>Bid</button>
       </div>
-      <p class="pending-note">Wallet transactions are disabled in this read-only parity milestone.</p>
+      <p class="pending-note">Connect a wallet to prepare a native-market transaction. Nothing is submitted without your confirmation.</p>
     </section>
   `;
 }

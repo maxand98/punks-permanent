@@ -33,26 +33,68 @@
 }
 .site-header .brand { display: block; width: min(428.6px, 64vw); margin: 0 auto 0 0; }
 .site-header .brand img { display: block; width: 100%; height: 74px; object-fit: contain; object-position: left center; }
-.site-menu { margin-left: auto; }
-.site-menu > summary { color: #ea34b0; font: 700 13px/1 Montserrat, sans-serif; list-style: none; text-transform: uppercase; }
-.site-menu > summary::-webkit-details-marker { display: none; }
-.site-menu nav {
-  position: absolute;
-  z-index: 50;
-  top: 106px;
+.wallet-drawer {
+  position: fixed;
+  z-index: 60;
+  top: 128px;
   right: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 180px);
-  gap: 24px;
-  padding: 30px;
-  border: 1px solid #eee;
-  background: #ea34b0;
-  color: #fff;
-  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  color: #202020;
+  font: 400 14px/1.4 Montserrat, sans-serif;
 }
-.site-menu nav section { display: grid; gap: 8px; align-content: start; }
-.site-menu nav strong { margin-bottom: 5px; }
-.site-menu nav a { font-size: 13px; text-decoration: none; }
+.wallet-panel {
+  position: relative;
+  width: 320px;
+  min-height: 284px;
+  padding: 31px 31px 34px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  box-shadow: 0 3px 11px rgba(0,0,0,.08);
+}
+.wallet-panel h2 { margin: 0 45px 24px 0; font-size: 26px; line-height: 1.05; }
+.wallet-collapse {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  color: #ea34b0;
+  font-size: 25px;
+  line-height: 1;
+}
+.wallet-address { margin: 0 0 22px; color: #ea34b0; font-size: 16px; font-weight: 700; }
+.wallet-copy { margin: 0 0 24px; color: #777; font-size: 13px; line-height: 1.45; }
+.wallet-withdrawal { min-height: 19px; margin: 0 0 25px; color: #999; font-size: 12px; }
+.wallet-primary,
+.wallet-secondary {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  padding: 14px;
+  font-weight: 700;
+}
+.wallet-primary { background: #ea34b0; color: #fff; }
+.wallet-secondary { margin-top: 10px; border: 1px solid #ea34b0; background: #fff; color: #ea34b0; }
+.wallet-message { margin: 14px 0 0; color: #777; font-size: 11px; overflow-wrap: anywhere; }
+.wallet-tab {
+  display: none;
+  min-width: 48px;
+  min-height: 122px;
+  border: 1px solid #e5e5e5;
+  border-right: 0;
+  padding: 12px 14px;
+  background: #fff;
+  color: #ea34b0;
+  box-shadow: 0 3px 11px rgba(0,0,0,.08);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.wallet-drawer.is-collapsed .wallet-panel { display: none; }
+.wallet-drawer.is-collapsed .wallet-tab { display: block; }
 
 .official-home { color: #272727; font: 400 18px/1.2 Montserrat, sans-serif; }
 .official-home a { color: #df46a6; font-weight: 700; text-decoration: none; }
@@ -162,7 +204,7 @@
   .site-header { min-height: 105px; padding: 20px 0; }
   .site-header .brand { width: min(260px, 70vw); }
   .site-header .brand img { height: 45px; }
-  .site-menu nav { top: 70px; grid-template-columns: 1fr; width: min(360px, calc(100vw - 40px)); }
+  .wallet-drawer { top: 116px; }
   .official-intro { padding: 54px 0 58px; }
   .intro-strip { grid-template-columns: repeat(7, minmax(72px, 1fr)); height: 216px; }
   .official-stat-grid { grid-template-columns: 1fr 1fr; }
@@ -824,21 +866,7 @@ footer > div:last-child { display: grid; align-content: start; gap: 10px; font-s
   border: 0;
   background: #fff;
 }
-body .site-header .site-menu nav {
-  position: absolute;
-  top: 106px;
-  right: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 180px);
-  align-items: start;
-  gap: 24px;
-  padding: 30px;
-  background: #ea34b0;
-}
-body .site-header .site-menu nav section { display: grid; gap: 8px; }
-body .site-header .site-menu nav a { padding: 0; }
-
 @media (max-width: 800px) {
   .site-header.site-header { min-height: 105px; padding: 20px 0; }
-  body .site-header .site-menu nav { top: 70px; display: grid; grid-template-columns: 1fr; width: min(360px, calc(100vw - 40px)); }
+  .wallet-panel { width: min(320px, calc(100vw - 20px)); }
 }

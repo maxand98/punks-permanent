@@ -25,6 +25,13 @@ export const dataAbi = [
 export const marketAbi = [
   {
     type: "function",
+    name: "pendingWithdrawals",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "punkIndexToAddress",
     stateMutability: "view",
     inputs: [{ name: "punkIndex", type: "uint256" }],
