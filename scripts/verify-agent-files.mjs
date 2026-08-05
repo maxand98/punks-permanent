@@ -9,6 +9,7 @@ const required = [
   "public/llms-full.txt",
   "public/.well-known/api-catalog",
   "public/.well-known/openapi.json",
+  "public/.well-known/agent-card.json",
   "public/.well-known/agent-skills/index.json",
   "public/.well-known/agent-skills/cryptopunks-research/SKILL.md",
 ];
@@ -20,5 +21,8 @@ const digest = `sha256:${createHash("sha256").update(skill).digest("hex")}`;
 assert.equal(index.skills[0].digest, digest, "Agent Skill digest must match SKILL.md");
 JSON.parse(await readFile("public/.well-known/api-catalog", "utf8"));
 JSON.parse(await readFile("public/.well-known/openapi.json", "utf8"));
+const card = JSON.parse(await readFile("public/.well-known/agent-card.json", "utf8"));
+assert.equal(card.protocolVersion, "1.0", "Agent Card must use A2A 1.0");
+assert.ok(card.supportedInterfaces.some((entry) => entry.protocolBinding === "JSONRPC" && entry.url.includes("tenant=cryptopunks")), "Agent Card must advertise the CryptoPunks JSON-RPC tenant");
+assert.ok(card.skills.length > 0, "Agent Card must advertise a real skill");
 console.log("Agent discovery files verified.");
-

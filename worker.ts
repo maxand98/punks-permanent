@@ -10,12 +10,14 @@ const AGENT_LINKS = [
   '<https://cryptopunks.website/llms.txt>; rel="alternate"; type="text/markdown"',
   '<https://cryptopunks.website/.well-known/api-catalog>; rel="service-desc"; type="application/json"',
   '<https://cryptopunks.website/.well-known/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
+  '<https://cryptopunks.website/.well-known/agent-card.json>; rel="describedby"; type="application/json"',
   '<https://cryptopunks.website/.well-known/agent-skills/cryptopunks-research/SKILL.md>; rel="service-desc"; type="text/markdown"',
 ].join(", ");
 
 const CONTENT_TYPES = new Map<string, string>([
   ["/.well-known/api-catalog", "application/linkset+json; charset=utf-8"],
   ["/.well-known/openapi.json", "application/json; charset=utf-8"],
+  ["/.well-known/agent-card.json", "application/json; charset=utf-8"],
   ["/.well-known/agent-skills/index.json", "application/json; charset=utf-8"],
   ["/.well-known/agent-skills/cryptopunks-research/SKILL.md", "text/markdown; charset=utf-8"],
   ["/llms.txt", "text/markdown; charset=utf-8"],
