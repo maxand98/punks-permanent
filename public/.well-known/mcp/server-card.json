@@ -1,0 +1,10 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  "version": "1.0",
+  "protocolVersion": "2025-11-25",
+  "serverInfo": {"name": "cryptopunks-public-research", "title": "CryptoPunks public dataset research", "version": "1.0.0"},
+  "description": "Read-only lookup over the public CryptoPunks attributes snapshot and decoded history shards.",
+  "transport": {"type": "streamable-http", "endpoint": "https://maxand98.com/mcp?tenant=cryptopunks"},
+  "authentication": {"required": false},
+  "capabilities": {"tools": true, "resources": false, "prompts": false}
+}

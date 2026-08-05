@@ -10,6 +10,7 @@ const required = [
   "public/.well-known/api-catalog",
   "public/.well-known/openapi.json",
   "public/.well-known/agent-card.json",
+  "public/.well-known/mcp/server-card.json",
   "public/.well-known/agent-skills/index.json",
   "public/.well-known/agent-skills/cryptopunks-research/SKILL.md",
 ];
@@ -25,4 +26,7 @@ const card = JSON.parse(await readFile("public/.well-known/agent-card.json", "ut
 assert.equal(card.protocolVersion, "1.0", "Agent Card must use A2A 1.0");
 assert.ok(card.supportedInterfaces.some((entry) => entry.protocolBinding === "JSONRPC" && entry.url.includes("tenant=cryptopunks")), "Agent Card must advertise the CryptoPunks JSON-RPC tenant");
 assert.ok(card.skills.length > 0, "Agent Card must advertise a real skill");
+const mcpCard = JSON.parse(await readFile("public/.well-known/mcp/server-card.json", "utf8"));
+assert.equal(mcpCard.transport.type, "streamable-http", "MCP Server Card must advertise Streamable HTTP");
+assert.ok(mcpCard.transport.endpoint.includes("tenant=cryptopunks"), "MCP Server Card must advertise the CryptoPunks tenant");
 console.log("Agent discovery files verified.");

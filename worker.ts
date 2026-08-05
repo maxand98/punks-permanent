@@ -11,6 +11,7 @@ const AGENT_LINKS = [
   '<https://cryptopunks.website/.well-known/api-catalog>; rel="service-desc"; type="application/json"',
   '<https://cryptopunks.website/.well-known/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
   '<https://cryptopunks.website/.well-known/agent-card.json>; rel="describedby"; type="application/json"',
+  '<https://cryptopunks.website/.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"',
   '<https://cryptopunks.website/.well-known/agent-skills/cryptopunks-research/SKILL.md>; rel="service-desc"; type="text/markdown"',
 ].join(", ");
 
@@ -53,6 +54,17 @@ const AGENT_CARD = {
   security: [],
 };
 
+const MCP_SERVER_CARD = {
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  version: "1.0",
+  protocolVersion: "2025-11-25",
+  serverInfo: { name: "cryptopunks-public-research", title: "CryptoPunks public dataset research", version: "1.0.0" },
+  description: "Read-only lookup over the public CryptoPunks attributes snapshot and decoded history shards.",
+  transport: { type: "streamable-http", endpoint: "https://maxand98.com/mcp?tenant=cryptopunks" },
+  authentication: { required: false },
+  capabilities: { tools: true, resources: false, prompts: false },
+};
+
 function acceptsMarkdown(request: Request) {
   const accept = request.headers.get("accept")?.toLowerCase() ?? "";
   return accept.includes("text/markdown") || accept.includes("text/x-markdown");
@@ -75,6 +87,14 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/.well-known/agent-card.json") {
       return withDiscovery(Response.json(AGENT_CARD, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=300",
+        },
+      }), "application/json; charset=utf-8");
+    }
+    if (url.pathname === "/.well-known/mcp/server-card.json") {
+      return withDiscovery(Response.json(MCP_SERVER_CARD, {
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Cache-Control": "public, max-age=300",
